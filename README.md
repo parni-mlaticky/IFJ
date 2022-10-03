@@ -1,5 +1,5 @@
 # IFJ projekt 2022
-[![BUILD](https://github.com/OndrejZobal/IFJ/actions/workflows/ci.yml/badge.svg)](https://github.com/OndrejZobal/IFJ/actions/workflows/ci.yml)
+[![CI](https://github.com/parni-mlaticky/IFJ/actions/workflows/ci.yml/badge.svg)](https://github.com/parni-mlaticky/IFJ/actions/workflows/ci.yml)
 
 ## Sestavení
 
