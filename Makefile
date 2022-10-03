@@ -1,14 +1,18 @@
-CC=gcc
-CFLAGS=
-LIBS=
-TARGET=./ifj22
+CC := gcc
+CFLAGS := -std=c11 -Wall -Wextra -pedantic
+LIBS :=
+TARGET := ./ifj22
 
-BUILD_DIR=./increment/
+BUILD_DIR := ./increment/
 
 ifeq ($(release),1)
 	CFLAGS += -o3
 else
 	CFLAGS += -g3
+endif
+
+ifeq ($(strict),1)
+	CFLAGS += -Werror
 endif
 
 OBJ = $(patsubst %.c,$(BUILD_DIR)%.o,$(wildcard *.c))
