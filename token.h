@@ -9,6 +9,9 @@
  * 
  */
 
+#ifndef TOKEN_H
+#define TOKEN_H
+
 #include <stdio.h>
 #include "lex.h"
 
@@ -17,17 +20,19 @@
  * 
  */
 typedef struct Token {
-  // state machine end states enum (Function ID, Variable ID, ...)
-  Lex lex; 
-  
-  union {
-    // if lex is a variable, this will be the name of it
-    char* string;
-    // value of int number 
-    int value;
-    // value of double number    
-    double value;
-    // will be used when we dont need to store the name of the lex (+ - * /, ...) 
-    void* empty; 
-  };
-};
+    // state machine end states enum (Function ID, Variable ID, ...)
+    Lex lex;
+
+    union {
+        // if lex is a variable, this will be the name of it
+        char* string;
+        // value of int number
+        int integer;
+        // value of double number
+        double decimal;
+        // will be used when we dont need to store the name of the lex (+ - * /, ...)
+        void* empty;
+    };
+} Token;
+
+#endif
