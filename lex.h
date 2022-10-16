@@ -9,28 +9,34 @@
  * 
  */
 
+#ifndef LEX_H
+#define LEX_H
+
 /**
  * @brief enum definition for lexeme types
  * 
  */
 typedef enum Lex{
-  VAR_ID,         // $A-Za-z_0-9
-  FUN_ID,         // A-Za-z_0-9
-  PAR_L,          // (
-  PAR_R,          // )
-  GREATER,        // >
-  GREATER_EQUAL,  // >=
-  LESS,           // <
-  LESS_THAN,      // <=
-  ASSIGN,         // =
-  EQUAL,          // ==
-  MULTIPLY,       // *
-  DIVIDE,         // /
-  ADD,            // +
-  SUBTRACT,       // -
-  MODULO,         // %
-  CBR_L,          // {
-  CBR_R,          // }
-  SEMICOLON,      // ;
-  COMMA           // ,
+    END = 0,        // EOF
+    VAR_ID,         // $A-Za-z_0-9
+    FUN_ID,         // A-Za-z_0-9
+    PAR_L,          // (
+    PAR_R,          // )
+    GREATER,        // >
+    GREATER_EQUAL,  // >=
+    LESS,           // <
+    LESS_THAN,      // <=
+    ASSIGN,         // =
+    EQUAL,          // ==
+    MULTIPLY,       // *
+    DIVIDE,         // /
+    ADD,            // +
+    SUBTRACT,       // -
+    MODULO,         // %
+    CBR_L,          // {
+    CBR_R,          // }
+    SEMICOLON,      // ;
+    COMMA,          // ,
 } Lex;
+
+#endif
