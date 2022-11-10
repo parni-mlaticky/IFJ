@@ -62,8 +62,8 @@
 
 
 
-GENERIC_LIST(Token*, tok);
-GENERIC_LIST(char, char);
+GENERIC_LIST(Token*, tok)
+GENERIC_LIST(char, char)
 
 
 // Converts the charList to char*
