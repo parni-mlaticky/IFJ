@@ -17,6 +17,7 @@
     } TYPE_NAME##Elem;                                                          \
                                                                                 \
     typedef struct TYPE_NAME##List{                                             \
+        TYPE_NAME##Elem* active;                                                \
         TYPE_NAME##Elem* first;                                                 \
         TYPE_NAME##Elem* last;                                                  \
         int len;                                                                \
@@ -25,10 +26,11 @@
     void TYPE_NAME##ListInit(TYPE_NAME##List* list) {                           \
         list->first = NULL;                                                     \
         list->last = NULL;                                                      \
+        list->active = NULL;                                                    \
         list->len = 0;                                                          \
     }                                                                           \
                                                                                 \
-    TYPE_NAME##Elem* TYPE_NAME##ListFirst(TYPE_NAME##List* list){               \
+    TYPE_NAME##Elem* TYPE_NAME##ListGetFirst(TYPE_NAME##List* list){            \
         return list->first;                                                     \
     }                                                                           \
     void TYPE_NAME##ListAppend(TYPE_NAME##List* list, TYPE data){               \
@@ -58,8 +60,19 @@
         list->last = NULL;                                                      \
         list->len = 0;                                                          \
                                                                                 \
+    }                                                                           \
+    void TYPE_NAME##ListFirst(TYPE_NAME##List* list){                           \
+        list->active = list->first;                                             \
+    }                                                                           \
+    void TYPE_NAME##ListNext(TYPE_NAME##List* list){                            \
+        if(!list->active){                                                      \
+            return;                                                             \
+        }                                                                       \
+        list->active = list->active->next;                                      \
+    }                                                                           \
+    TYPE TYPE_NAME##ListGetValue(TYPE_NAME##List* list){                        \
+        return list->active->data;                                              \
     }
-
 
 
 GENERIC_LIST(Token*, tok)
@@ -69,7 +82,7 @@ GENERIC_LIST(char, char)
 // Converts the charList to char*
 char* charListToString(charList *l){
     char* str = malloc((l->len+1)*sizeof(char));
-    charElem* iter = charListFirst(l);
+    charElem* iter = charListGetFirst(l);
     int i = 0;
     while(i < l->len){
         str[i] = iter->data;
