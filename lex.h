@@ -17,7 +17,17 @@
  * 
  */
 typedef enum Lex{
-    END = 0,        // EOF
+    // CONTROLL LEXES
+    DISCARD,        // Token is meaningless and should be thrown out (like a comment).
+    INVALID,        // Invalid token, this is an error!
+
+    // USEFULL LEXES
+    END = 0,        // EOF (becuase the parser should probably know)
+    SCRIPT_START,   // <? TODO does this also need to include the "php"?
+    SCRIPT_STOP,    // ?>
+    STRING_LIT,     // "bruh"
+    INT_LIT,        // 10
+    FLOAT_LIT,      // 10.3
     VAR_ID,         // $A-Za-z_0-9
     FUN_ID,         // A-Za-z_0-9
     PAR_L,          // (
@@ -25,7 +35,7 @@ typedef enum Lex{
     GREATER,        // >
     GREATER_EQUAL,  // >=
     LESS,           // <
-    LESS_THAN,      // <=
+    LESS_EQUAL,      // <=
     ASSIGN,         // =
     EQUAL,          // ==
     MULTIPLY,       // *
