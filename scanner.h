@@ -3,6 +3,8 @@
 
 #include <stdlib.h>
 #include "token.h"
+#include "lex.h"
+#include <stdbool.h>
 
 
 typedef enum {
@@ -18,7 +20,7 @@ typedef enum {
     S_QUESTION_MARK,
     S_VARIABLE_ID,
     S_GREATER_THAN,
-    S_LESSER_THAN,
+    S_LESS_EQUAL,
     S_IDENTIFIER,
     S_INT_LITERAL,
     S_FLOAT_LITERAL_DEC,
@@ -36,6 +38,7 @@ typedef enum {
  */
 Token scan_next_token(FILE* file);
 
+
 /**
  * Get the next state from the input character and a current state.
  * - When START state is returned, it means that the token is finished and that
@@ -47,6 +50,6 @@ Token scan_next_token(FILE* file);
  * @param c Current character
  * @return New state
  */
-ScannerState get_next_state(ScannerState current_state, char c, Lex* lex_out);
+ScannerState get_next_state(ScannerState current_state, char c, Lex* lex_out, bool* ignore, bool* skipChar);
 
 #endif
