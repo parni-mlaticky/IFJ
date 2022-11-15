@@ -1,0 +1,1 @@
+$KOLO = "TUPOKOLO";
