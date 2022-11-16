@@ -18,7 +18,6 @@
  */
 typedef enum Lex{
     // CONTROLL LEXES
-    DISCARD,        // Token is meaningless and should be thrown out (like a comment).
     INVALID,        // Invalid token, this is an error!
 
     // USEFULL LEXES
@@ -47,6 +46,7 @@ typedef enum Lex{
     CBR_R,          // }
     SEMICOLON,      // ;
     COMMA,          // ,
+    QUESTION_MARK,  // ?
 } Lex;
 
 #endif

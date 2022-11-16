@@ -16,6 +16,6 @@ int main(int argc, char** argv) {
         printf("%d\n", tokens++->lex);
     }
     printf(">>> END OF TOKENS <<<\n");
-    free(tokens);
+    //free(tokens);
 
 }
