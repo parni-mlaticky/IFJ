@@ -6,12 +6,13 @@
 #include <string.h>
 #include "list.h"
 
-typedef enum {
-/* Every state in the state machine has their own enum...
- * Except: End state that have no arrow coming from them
- */
+typedef enum
+{
+    /* Every state in the state machine has their own enum...
+     * Except: End state that have no arrow coming from them
+     */
     S_START = 0,
-    S_DONE,
+    //S_DONE,
     S_SINGLE_LINE_COMMENT,
     S_START_OF_COMMENT_OR_DIV,
     S_BLOCK_COMMENT,
@@ -26,54 +27,13 @@ typedef enum {
     S_FLOAT_LITERAL_E,
     S_STRING_LITERAL_DQ,
     S_STRING_LITERAL_SQ,
+    S_EQUAL,
     // PHP_BEGIN,
     // PHP_END,
 } ScannerState;
 
-Token scan_next_token(FILE* file) {
-    charList str;
-    charListInit(&str);
-
-    int strPos = 0;
-    int c;
-    bool ignore = false;
-    bool skipChar = false;
-
-    ScannerState currentState = S_START;
-    Lex currentLex;
-
-    while ((c = fgetc(file)) != EOF) {
-        // EVERYTHING HERE IS BROKEN LOL!
-        currentState = get_next_state(currentState, c, &currentLex, &ignore, &skipChar);
-
-        if(ignore) {
-          ignore = false;
-          charListDispose(&str);
-          continue;
-        }
-        if(currentState == S_START) {
-          if(currentLex )
-  
-          ungetc(c, file);
-          
-          break;
-        }
-          else if(currentState == S_DONE) {
-            charListAppend(&str, c);
-            break;
-        }
-        else {
-            charListAppend(&str, c);
-        }
-  }
-    Token token = {
-      .lex= currentLex,
-      .string=NULL,
-  };
-    return token;
-}
-
-typedef enum {
+typedef enum
+{
     // Continue while skipping current character.
     R_NOADD,
     // Continue while including current character.
@@ -83,14 +43,16 @@ typedef enum {
     // Token is finished but current character belongs to the next token.
     R_FINAL_NOADD,
     // Token is finsihed but is not valuable to the program and shoudl be discarded (comments).
-    R_GARBAGE,
+    //R_GARBAGE,
     // Token is invalid.
     R_ERROR,
 } StateInfoResult;
 
-typedef struct StateInfo {
+typedef struct StateInfo
+{
     StateInfoResult result;
-    union {
+    union
+    {
         // Is valid on resutl: R_NOADD, R_ADD, R_GARBAGE and R_ERROR.
         ScannerState next_state;
         // Is valid on result: R_FINAL_ADD and R_FINAL_NOADD.
@@ -110,7 +72,6 @@ typedef struct StateInfo {
  * @return New state
  */
 StateInfo get_next_state(ScannerState current_state, char c) {
-    StateInfo info;
     switch (current_state) {
         case S_START:
             // Early return for throwing out white space fluff.
@@ -144,7 +105,7 @@ StateInfo get_next_state(ScannerState current_state, char c) {
                     return (StateInfo) {.result = R_FINAL_ADD, .lex = SEMICOLON};
 
                 case '/':
-                    return (StateInfo) {.result = R_ADD, .next_state = S_START_OF_COMMENT_OR_DIV};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_START_OF_COMMENT_OR_DIV};
 
                 case '$':
                     return (StateInfo) {.result = R_ADD, .next_state = S_VARIABLE_ID};
@@ -159,10 +120,12 @@ StateInfo get_next_state(ScannerState current_state, char c) {
                     return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_DQ};
 
                 case '\'':
-                    return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_SQ};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_STRING_LITERAL_SQ};
 
                 case '?':
                     return (StateInfo) {.result = R_ADD, .next_state = S_QUESTION_MARK};
+                case '=':
+                    return (StateInfo) {.result = R_ADD, .next_state = S_EQUAL};
 
                 default:
                     if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
@@ -175,10 +138,10 @@ StateInfo get_next_state(ScannerState current_state, char c) {
         case S_START_OF_COMMENT_OR_DIV:
             switch (c) {
                 case '/':
-                    return (StateInfo) {.result = R_ADD, .next_state = S_SINGLE_LINE_COMMENT};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_SINGLE_LINE_COMMENT};
 
                 case '*':
-                    return (StateInfo) {.result = R_ADD, .next_state = S_BLOCK_COMMENT};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_BLOCK_COMMENT};
 
                 default:
                     return (StateInfo) {.result = R_ADD, .next_state = S_START};
@@ -187,31 +150,31 @@ StateInfo get_next_state(ScannerState current_state, char c) {
         case S_SINGLE_LINE_COMMENT:
             switch (c) {
                 case '\n':
-                    return (StateInfo) {.result = R_GARBAGE, .next_state = S_START};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_START};
 
                 default:
-                    return (StateInfo) {.result = R_ADD, .next_state = S_SINGLE_LINE_COMMENT};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_SINGLE_LINE_COMMENT};
             }
 
         case S_BLOCK_COMMENT:
             switch (c) {
                 case '*':
-                    return (StateInfo) {.result = R_ADD, .next_state = S_POSSIBLE_END_OF_BLOCK_COMMENT};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_POSSIBLE_END_OF_BLOCK_COMMENT};
 
                 default:
-                    return (StateInfo) {.result = R_ADD, .next_state = S_BLOCK_COMMENT};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_BLOCK_COMMENT};
             }
 
         case S_POSSIBLE_END_OF_BLOCK_COMMENT:
             switch (c) {
                 case '*':
-                    return (StateInfo) {.result = R_ADD, .next_state = S_POSSIBLE_END_OF_BLOCK_COMMENT};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_POSSIBLE_END_OF_BLOCK_COMMENT};
 
                 case '/':
-                    return (StateInfo) {.result = R_GARBAGE, .next_state = S_START};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_START};
 
                 default:
-                    return (StateInfo) {.result = R_ADD, .next_state = S_BLOCK_COMMENT};
+                    return (StateInfo) {.result = R_NOADD, .next_state = S_BLOCK_COMMENT};
             }
 
         case S_QUESTION_MARK:
@@ -285,9 +248,72 @@ StateInfo get_next_state(ScannerState current_state, char c) {
 
         case S_STRING_LITERAL_SQ:
             if (c == '\'') {
-                return (StateInfo) {.result = R_FINAL_ADD, .lex = STRING_LIT};
+                return (StateInfo) {.result = R_FINAL_NOADD, .lex = STRING_LIT};
             }
             return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_SQ};
+
+        case S_EQUAL:
+            if(c == '=') {
+                return (StateInfo) {.result = R_FINAL_ADD, .lex = EQUAL};
+            }
+            return (StateInfo) {.result = R_FINAL_NOADD, .lex = ASSIGN};
     }
     return (StateInfo) {.result = R_ERROR, .next_state = S_START};
+}
+
+Token scan_next_token(FILE *file)
+{
+    charList str;
+    charListInit(&str);
+    Lex returnLex;
+
+    int c;
+
+    ScannerState currentState = S_START;
+    StateInfo nextState;
+
+    while ((c = fgetc(file)) != EOF)
+    {
+        // EVERYTHING HERE IS BROKEN LOL!
+        nextState = get_next_state(currentState, c);
+        currentState = nextState.next_state;
+
+        if(nextState.result == R_NOADD) {
+            continue;
+        }
+        else if(nextState.result == R_ADD) {
+            charListAppend(&str, c);
+            continue;
+        }
+        else if(nextState.result ==  R_FINAL_ADD) {
+            charListAppend(&str, c);
+            returnLex = nextState.lex;
+            break;
+        }
+        else if(nextState.result == R_FINAL_NOADD){
+            returnLex = nextState.lex;
+            ungetc(c, file);
+            break;
+        }
+        else{
+            fprintf(stderr, "the received token is invalid, lexical analysis error, exiting...");
+            exit(1);
+        }
+    }
+    if(c == EOF) {
+            Token token = {
+                .lex = END,
+            };
+            
+            return token;
+        }
+
+    char* returnStr = charListToString(&str);
+
+
+    Token token = {
+        .lex = returnLex,
+        .string = returnStr,
+    };
+    return token;
 }
