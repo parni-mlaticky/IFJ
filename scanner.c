@@ -309,9 +309,7 @@ Token scan_next_token(FILE *file)
     ScannerState currentState = S_START;
     StateInfo nextState;
 
-    while ((c = fgetc(file)) != EOF)
-    {
-        // EVERYTHING HERE IS BROKEN LOL!
+    while ((c = fgetc(file)) != EOF) {
         nextState = get_next_state(currentState, c);
         currentState = nextState.next_state;
 
@@ -327,30 +325,29 @@ Token scan_next_token(FILE *file)
             returnLex = nextState.lex;
             break;
         }
-        else if(nextState.result == R_FINAL_NOADD){
+        else if(nextState.result == R_FINAL_NOADD) {
             returnLex = nextState.lex;
             ungetc(c, file);
             break;
         }
         else{
-            fprintf(stderr, "the received token is invalid, lexical analysis error, exiting...");
+            char* string = charListToString(&str);
+            fprintf(stderr, "Received token \"%s%c\"is invalid, lexical analysis error,"
+                    " exiting...", string, c);
+            free(string);
             exit(1);
         }
     }
+
     if(c == EOF) {
-            Token token = {
-                .lex = END,
-            };
-            
-            return token;
-        }
+        return (Token) {
+            .lex = END,
+        };
+    }
 
     char* returnStr = charListToString(&str);
-
-
-    Token token = {
+    return (Token)  {
         .lex = returnLex,
         .string = returnStr,
     };
-    return token;
 }
