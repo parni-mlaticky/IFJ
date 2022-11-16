@@ -28,6 +28,10 @@ typedef enum
     S_STRING_LITERAL_DQ,
     S_STRING_LITERAL_SQ,
     S_EQUAL,
+    S_CONCAT_OR_FLOAT,
+    S_NOT_EQUAL,
+    S_NOT_EQUAL_FINAL,
+    S_STRICT_EQUAL,
     // PHP_BEGIN,
     // PHP_END,
 } ScannerState;
@@ -124,14 +128,23 @@ StateInfo get_next_state(ScannerState current_state, char c) {
 
                 case '?':
                     return (StateInfo) {.result = R_ADD, .next_state = S_QUESTION_MARK};
+
                 case '=':
                     return (StateInfo) {.result = R_ADD, .next_state = S_EQUAL};
 
+                case '.':
+                    return (StateInfo) {.result = R_ADD, .next_state = S_CONCAT_OR_FLOAT};
+
+                case '!':
+                    return (StateInfo) {.result = R_ADD, .next_state = S_NOT_EQUAL};
+
                 default:
-                    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-                        (c >= '0' && c <= '9')) {
+                    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')){
                         return (StateInfo) {.result = R_ADD, .next_state = S_IDENTIFIER};
-                    }
+                      } 
+                      else if((c >= '0' && c <= '9')) {
+                        return (StateInfo) {.result = R_ADD, .next_state = S_INT_LITERAL};
+                      }
                     return (StateInfo) {.result = R_FINAL_NOADD, .lex = STRING_LIT};
             }
 
@@ -185,7 +198,7 @@ StateInfo get_next_state(ScannerState current_state, char c) {
 
         case S_VARIABLE_ID:
             if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-                (c >= '0' && c <= '9')) {
+                (c >= '0' && c <= '9') || (c == '-' || c == '_')) {
                 return (StateInfo) {.result = R_ADD, .next_state = S_VARIABLE_ID};
             }
             return (StateInfo) {.result = R_FINAL_NOADD, .lex = VAR_ID};
@@ -211,7 +224,7 @@ StateInfo get_next_state(ScannerState current_state, char c) {
 
         case S_IDENTIFIER:
             if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-                (c >= '0' && c <= '9')) {
+                (c >= '0' && c <= '9') || (c == '-' || c == '_')) {
                 return (StateInfo) {.result = R_ADD, .next_state = S_IDENTIFIER};
             }
             return (StateInfo) {.result = R_FINAL_NOADD, .lex = FUN_ID};
@@ -248,15 +261,39 @@ StateInfo get_next_state(ScannerState current_state, char c) {
 
         case S_STRING_LITERAL_SQ:
             if (c == '\'') {
-                return (StateInfo) {.result = R_FINAL_NOADD, .lex = STRING_LIT};
+                return (StateInfo) {.result = R_FINAL_ADD, .lex = STRING_LIT};
             }
             return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_SQ};
 
         case S_EQUAL:
             if(c == '=') {
-                return (StateInfo) {.result = R_FINAL_ADD, .lex = EQUAL};
+                return (StateInfo) {.result = R_ADD, .next_state = S_STRICT_EQUAL};
             }
             return (StateInfo) {.result = R_FINAL_NOADD, .lex = ASSIGN};
+        case S_STRICT_EQUAL:
+            if(c == '=') {
+              return (StateInfo) {.result = R_FINAL_ADD, .lex = EQUAL};
+            }
+            return (StateInfo) {.result = R_ERROR};
+
+        case S_CONCAT_OR_FLOAT:
+            if(c >= '0' && c <= '9') {
+                return (StateInfo) {.result = R_ADD, .next_state = S_FLOAT_LITERAL_DEC};
+            }
+            return (StateInfo) {.result = R_FINAL_NOADD, .lex = CONCAT};
+        case S_NOT_EQUAL:
+            if(c == '=') {
+              return (StateInfo) {.result = R_ADD, .next_state = S_NOT_EQUAL_FINAL};
+            }
+              return (StateInfo) {.result = R_ERROR}; // FIXME: which nextstate
+        case S_NOT_EQUAL_FINAL:
+            if(c == '=') {
+              return (StateInfo) {.result = R_FINAL_ADD, .lex = NOT_EQUAL};
+            }
+              return (StateInfo) {.result = R_ERROR}; // FIXME: which nextstate
+            
+
+
     }
     return (StateInfo) {.result = R_ERROR, .next_state = S_START};
 }

@@ -36,7 +36,7 @@ typedef enum Lex{
     LESS,           // <
     LESS_EQUAL,      // <=
     ASSIGN,         // =
-    EQUAL,          // ==
+    EQUAL,          // ===
     MULTIPLY,       // *
     DIVIDE,         // /
     ADD,            // +
@@ -47,6 +47,8 @@ typedef enum Lex{
     SEMICOLON,      // ;
     COMMA,          // ,
     QUESTION_MARK,  // ?
+    CONCAT,         // .
+    NOT_EQUAL,
 } Lex;
 
 #endif
