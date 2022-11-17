@@ -1,8 +1,9 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "token.h"
+#include "scanner.h"
+#include "list.h"
 
-Token* parse_file(FILE* file);
+tokList* parse_file(FILE* file);
 
 #endif
