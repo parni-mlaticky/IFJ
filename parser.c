@@ -1,10 +1,9 @@
 #include <stdlib.h>
 #include "parser.h"
-#include "stack.h"
-#include "list.h"
-#include "keywords.h"
 
-
+const char* keywords[] = { "if", "else", "declare", "strict_types", 
+                            "function", "while", "int", "float",
+                            "void", "string"};
 
 
 terminalType lexEnumToTerminalEnum(Lex lex){
@@ -39,12 +38,130 @@ terminalType lexEnumToTerminalEnum(Lex lex){
             return LPAR; 
         case PAR_R:
             return RPAR;  
-        // this will never happen    
         default:
-            exit(1);                                
+            return DOLLAR;                                
     }
 }
 
+
+opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
+    terminalType lexToTerm = lexEnumToTerminalEnum(nextTerm);
+    switch (stackTerm){
+        case DOLLAR:
+            if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV
+            || lexToTerm == MUL || lexToTerm == AS || lexToTerm == EQ
+            || lexToTerm == NEQ || lexToTerm == GEQ || lexToTerm == LEQ
+            || lexToTerm == G || lexToTerm == L || lexToTerm == RPAR
+            || lexToTerm == OP || lexToTerm == LPAR){
+                return P_LESS;
+            }
+            else syntaxError();
+            break;
+
+        case OP:
+            if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV 
+            || lexToTerm == MUL || lexToTerm == AS || lexToTerm == EQ
+            || lexToTerm == NEQ || lexToTerm == GEQ || lexToTerm == LEQ 
+            || lexToTerm == G || lexToTerm == L
+            || lexToTerm == RPAR || lexToTerm == DOLLAR){
+                return P_GREATER;
+            }
+            else syntaxError();
+            break;
+
+        case PLUS: case MINUS: case CAT:
+            if(lexToTerm == DIV || lexToTerm == MUL || lexToTerm == LPAR
+            || lexToTerm == OP){
+                return P_LESS;
+            }
+            else if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT|| lexToTerm == AS
+            || lexToTerm == EQ || lexToTerm == NEQ || lexToTerm == GEQ
+            || lexToTerm == LEQ || lexToTerm == G || lexToTerm == L
+            || lexToTerm == RPAR || lexToTerm == DOLLAR){
+                return P_GREATER;
+            }
+            else syntaxError();
+            break;
+
+        case MUL: case DIV:
+            if(lexToTerm == LPAR || lexToTerm == OP){
+                return P_LESS;
+            }
+            else if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV
+            || lexToTerm == MUL || lexToTerm == AS || lexToTerm == EQ || lexToTerm == NEQ
+            || lexToTerm == GEQ || lexToTerm == LEQ || lexToTerm == G || lexToTerm == L
+            || lexToTerm == RPAR || lexToTerm == DOLLAR){
+                return P_GREATER;
+            }
+            else syntaxError(); 
+            break;
+
+        case AS:
+            if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV
+            || lexToTerm == MUL || lexToTerm == AS || lexToTerm == EQ
+            || lexToTerm == NEQ || lexToTerm == GEQ || lexToTerm == LEQ
+            || lexToTerm == G || lexToTerm == L || lexToTerm == LPAR
+            || lexToTerm == OP){
+                return P_LESS;
+            }
+            else if(lexToTerm == RPAR || lexToTerm == DOLLAR){
+                return P_GREATER;
+            }
+            else syntaxError();
+            break;
+
+        case EQ: case NEQ:
+            if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV
+            || lexToTerm == MUL || lexToTerm == GEQ || lexToTerm == LEQ
+            || lexToTerm == G || lexToTerm == L || lexToTerm == LPAR
+            || lexToTerm == OP){
+                return P_LESS;
+            }
+            else if(lexToTerm == AS || lexToTerm == EQ || lexToTerm == NEQ
+            || lexToTerm == DOLLAR){
+                return P_GREATER;
+            }
+            else syntaxError();
+            break;
+
+        case GEQ: case LEQ: case G: case L:
+            if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV
+            || lexToTerm == MUL || lexToTerm == LPAR || lexToTerm == OP){
+                return P_LESS;
+            }
+            else if(lexToTerm == AS || lexToTerm == EQ || lexToTerm == NEQ || lexToTerm == GEQ
+            || lexToTerm == LEQ || lexToTerm == L || lexToTerm == G || lexToTerm == RPAR){
+                return P_GREATER;
+            }
+            else syntaxError();
+            break;
+
+        case LPAR:
+            if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV
+            || lexToTerm == MUL || lexToTerm == AS || lexToTerm == EQ || lexToTerm == NEQ
+            || lexToTerm == GEQ || lexToTerm == LEQ || lexToTerm == G || lexToTerm == L
+            || lexToTerm == LPAR || lexToTerm == OP){
+                return P_LESS;
+            }
+            else if(lexToTerm == RPAR){
+                return P_EQ;
+            }
+            else syntaxError();  
+            break;
+        case RPAR:
+            if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV
+            || lexToTerm == MUL || lexToTerm == AS || lexToTerm == EQ || lexToTerm == NEQ
+            || lexToTerm == GEQ || lexToTerm == LEQ || lexToTerm == G || lexToTerm == L
+            || lexToTerm == RPAR || lexToTerm == DOLLAR){
+                return P_GREATER;
+            }      
+            else syntaxError();
+            break;
+
+        default: exit(99);  
+    }
+    return DOLLAR;
+}
 
 // Operators are >= 4 in the enum
 bool isOperator(stackElement* elem){
@@ -109,8 +226,6 @@ void precParseReduction(stack* s){
             break;
 
         default:
-            // Syntax error, OR its a bunch of assignments chained together like $a = $b = $c = $d
-            // I have no idea how are we gonna do this
             syntaxError();       
     }
 
@@ -122,12 +237,16 @@ bool precParser(tokList* tl){
     stack s;
     stackInit(&s);
 
-    stackPushTerminal(&s, DOLLAR);
-    Token* t = getNextToken(tl);
-    if(!t) syntaxError();
+    // counts parentheses in the expression to differentiate between the end par of if()
+    int parCount = 0;
+
+    stackPushTerminal(&s, DOLLAR, NULL);
+    Token* token;
     stackElement* top;
     while(1){
-        if(compareLexTypes(t, PAR_R) || compareLexTypes(t, SEMICOLON)){
+        token = tokListGetValue(tl);
+        if(!token) syntaxError();
+        if(((compareLexTypes(token, PAR_R) || compareLexTypes(token, SEMICOLON)) && parCount == 0)){
             if(containsOnlyTopNonterm(&s)){
                 break;
             }
@@ -139,51 +258,41 @@ bool precParser(tokList* tl){
             }
         }
         top = getTopTerminal(&s);
-        switch(top->data.tType){
-            case DOLLAR:
-                switch(t->lex){
-                    case ADD: case SUBTRACT: case DIVIDE: case MULTIPLY:
-                    case ASSIGN: case EQUAL: case NOT_EQUAL: case GREATER_EQUAL:
-                    case LESS_EQUAL: case GREATER: case LESS: case DOLLAR: case PAR_R:
-                    case VAR_ID: case FUN_ID: case INT_LIT: case FLOAT_LIT: case STRING_LIT: 
-                        stackInsertHandle(&s);
-                        stackPushTerminal(&s, lexEnumToTerminalEnum(t->lex));
-                        t = getNextToken(tl);
-                        break;
-                    default:
-                        syntaxError(); // FIXME   
-                }
-                break;
-            case OP:
-                switch(t->lex){
-                    case ADD: case SUBTRACT: case DIVIDE: case MULTIPLY:
-                    case ASSIGN: case EQUAL: case NOT_EQUAL: case GREATER_EQUAL:
-                    case LESS_EQUAL: case GREATER: case LESS: case PAR_R: case SEMICOLON:
-                        precParseReduction(&s);
-                        break;
-                    default:
-                        syntaxError();    
-                }
-                break;    
-            case PLUS: case MINUS:
-                switch(t->lex){
-                    // "<" rules    
-                    case DIVIDE: case MULTIPLY: case PAR_L: case VAR_ID:
-                    case FUN_ID: case INT_LIT: case STRING_LIT: case FLOAT_LIT:
-                        stackInsertHandle(&s);
-                        stackPushTerminal(&s, lexEnumToTerminalEnum(t->lex));
-                        t = getNextToken(tl);
-                        break;
-
-
-                    // ">" rules
-                    case ADD: case SUBTRACT: case ASSIGN: case EQUAL: case NOT_EQUAL: case GREATER_EQUAL: case LESS_EQUAL: case GREATER: case LESS: case PAR_R:
-                        precParseReduction(&s);
-                        break;
-                }
+        opPrecedence prec = getPrecedence(top->data.tType, token->lex);
+        if(prec == P_LESS){
+            stackInsertHandle(&s);
+            if(token->lex == FUN_ID){
+                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
+            }
+            else if(token->lex == STRING_LIT || token->lex == INT_LIT || token->lex == FLOAT_LIT){
+                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
+            }
+            else if(token->lex == VAR_ID){
+                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
+            }
+            else if(token->lex == PAR_L){
+                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
+                parCount++;
+            }
+            else if(token->lex == PAR_R){
+                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
+                parCount--;
+            }
+            else{
+                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
+            }   
+            getNextToken(tl);
+        }
+        else if(prec == P_GREATER){
+            precParseReduction(&s);
+        }
+        else if(prec == P_EQ){
+            stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
+            parCount--;
+            getNextToken(tl);
         }
     }
-    if(containsOnlyTopNonterm(&s) && (t->lex == SEMICOLON || t->lex == CBR_R)){
+    if(containsOnlyTopNonterm(&s) && (token->lex == SEMICOLON || token->lex == PAR_R)){
         result = true;
     }
     return result;
@@ -298,6 +407,8 @@ bool STExpansion(tokList* tl){
     Token* t = tokListGetValue(tl);
     if(compareLexTypes(t, VAR_ID)){
         St = precParser(tl);
+        t = getNextToken(tl);
+        St = St && compareLexTypes(t, SEMICOLON);
     }
     else if(compareLexTypes(t, FUN_ID)){
         if(compareTerminalStrings(t, "function")) St = functionDefStExpansion(tl);
@@ -329,7 +440,7 @@ bool functionDefStExpansion(tokList* tl){
     t = getNextToken(tl);
     fDefSt = fDefSt && compareLexTypes(t, PAR_R);
     t = getNextToken(tl);
-    fDefSt = fDefSt; // && compareLexTypes(t, COLON) && typeExpansion(tl) && blockExpansion(tl) FIXME
+    fDefSt = fDefSt && compareLexTypes(t, COLON) && typeExpansion(tl) && blockExpansion(tl);
     return fDefSt;
 }
 
@@ -415,24 +526,26 @@ bool paramListExpansion(tokList* tl){
 
 bool typeExpansion(tokList* tl){
     bool type = false;
+    bool questionMark = false;
     Token* t;
 
     t = tokListGetValue(tl);
     if(compareLexTypes(t, QUESTION_MARK)){
+        questionMark = true;
         getNextToken(tl);
     }
-    type = typeNameExpansion(tl);
+    type = typeNameExpansion(tl, questionMark);
     return type;
 }
 
 
-bool typeNameExpansion(tokList* tl){
+bool typeNameExpansion(tokList* tl, bool questionMark){
     bool typeName;
     Token* t;
     t = getNextToken(tl);
-    typeName = compareLexTypes(t, FUN_ID); // FIXME
+    typeName = compareLexTypes(t, FUN_ID);
     typeName = typeName && (compareTerminalStrings(t, "int") || compareTerminalStrings(t, "float") || 
-                            compareTerminalStrings(t, "void") || compareTerminalStrings(t, "string"));
+                            (compareTerminalStrings(t, "void") && !questionMark) || compareTerminalStrings(t, "string"));
     return typeName;                        
 }
 

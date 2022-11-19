@@ -5,7 +5,15 @@
 #include <stdbool.h>
 #include "list.h"
 #include "scanner.h"
-#include "list.h"
+#include "stack.h"
+
+#define KEYWORD_COUNT 10
+
+typedef enum{
+    P_LESS,
+    P_GREATER,
+    P_EQ
+} opPrecedence;
 
 bool parse_file(FILE* file);
 
@@ -15,6 +23,9 @@ bool isKeyword(Token* t);
 
 void syntaxError();
 
+terminalType lexEnumToTerminalEnum(Lex lex);
+
+opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm);
 
 Token* getNextToken(tokList* tl);
 
@@ -52,6 +63,6 @@ bool paramListExpansion(tokList* tl);
 bool typeExpansion(tokList* tl);
 
 
-bool typeNameExpansion(tokList* tl);
+bool typeNameExpansion(tokList* tl, bool questionMark);
 bool blockExpansion(tokList* tl);
 #endif
