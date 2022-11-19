@@ -1,0 +1,39 @@
+adding tokens with 1 <? 
+adding tokens with 7 php 
+adding tokens with 7 declare 
+adding tokens with 8 ( 
+adding tokens with 7 strict_types 
+adding tokens with 14 = 
+adding tokens with 4 1 
+adding tokens with 9 ) 
+adding tokens with 23 ; 
+adding tokens with 6 $escapeHexadecimal 
+adding tokens with 14 = 
+adding tokens with 3 "Ko\x00Lo" 
+adding tokens with 23 ; 
+adding tokens with 6 $escapeOctal 
+adding tokens with 14 = 
+adding tokens with 3 "Ko\400Lo" 
+adding tokens with 23 ; 
+adding tokens with 2 ?> 
+adding tokens with 0 (null) 
+>>> TOKENS <<<
+1
+7
+7
+8
+7
+14
+4
+9
+23
+6
+14
+3
+23
+6
+14
+3
+23
+2
+>>> END OF TOKENS <<<
