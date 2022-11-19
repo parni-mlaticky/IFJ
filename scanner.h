@@ -12,6 +12,6 @@
  * @param file Input file
  * @return The new token
  */
-Token scan_next_token(FILE* file);
+Token scan_next_token(FILE* file, bool expect_prolog);
 void debug_print_tokens(tokList* list);
 #endif
