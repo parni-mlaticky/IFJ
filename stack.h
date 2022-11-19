@@ -1,7 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include "token.h"
-#include "keywords.h"
 
 typedef enum elemType{
     TERMINAL,

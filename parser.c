@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include "parser.h"
 
-const char* keywords[] = { "if", "else", "declare", "strict_types", 
-                            "function", "while", "int", "float",
+const char* keywords[] = { "if", "else", "declare", "function",
+                            "while", "int", "float",
                             "void", "string"};
 
 
@@ -308,6 +308,7 @@ bool parse_file(FILE* file) {
         token = *new;
         tokListAppend(list, new);
     } while (token.lex != END);
+    debug_print_tokens(list);
     return recursiveDescent(list);
 }
 
