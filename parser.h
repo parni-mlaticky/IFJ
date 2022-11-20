@@ -45,6 +45,9 @@ bool STExpansion(tokList* tl);
 
 bool endTokenExpansion(tokList* tl);
 
+bool blockSTListExpansion(tokList* tl);
+
+bool blockSTExpansion(tokList* tl);
 
 bool functionDefStExpansion(tokList* tl);
 

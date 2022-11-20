@@ -418,6 +418,34 @@ bool STListExpansion(tokList* tl){
     return STList;
 }
 
+bool blockSTListExpansion(tokList* tl){
+    bool blockSTList = false;
+    Token* t = tokListGetValue(tl);
+    if(compareLexTypes(t, END)) blockSTList = true;
+    else if(compareLexTypes(t, SCRIPT_STOP)) blockSTList = true;
+    else if(compareLexTypes(t, CBR_R)) blockSTList = true;
+    else blockSTList = blockSTExpansion(tl) && blockSTListExpansion(tl);
+    return blockSTList;
+}
+
+bool blockSTExpansion(tokList* tl){
+    bool blockSt = false;
+    Token* t = tokListGetValue(tl);
+    if(compareLexTypes(t, VAR_ID)){
+        blockSt = precParser(tl);
+        t = getNextToken(tl);
+        blockSt = blockSt && compareLexTypes(t, SEMICOLON);
+    }
+    else if(compareLexTypes(t, FUN_ID)){
+        if(compareTerminalStrings(t, "if")) blockSt = ifStExpansion(tl);
+        else if(compareTerminalStrings(t, "while")) blockSt = whileStExpansion(tl);
+        else if(compareTerminalStrings(t, "return")) blockSt = returnStExpansion(tl);
+        else if(compareTerminalStrings(t, "function")) blockSt = false;
+        else blockSt = precParser(tl);
+    }
+    return blockSt;
+}
+
 bool STExpansion(tokList* tl){
     bool St = false;
     Token* t = tokListGetValue(tl);
@@ -569,7 +597,7 @@ bool blockExpansion(tokList* tl){
     bool block = false;
     Token* t;
     t = getNextToken(tl);
-    block = compareLexTypes(t, CBR_L) && STListExpansion(tl);
+    block = compareLexTypes(t, CBR_L) && blockSTListExpansion(tl);
     t = getNextToken(tl);
     block = block && compareLexTypes(t, CBR_R);
     return block;
