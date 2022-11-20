@@ -291,7 +291,7 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
                       else if((*c >= '0' && *c <= '9')) {
                         return (StateInfo) {.result = R_ADD, .next_state = S_INT_LITERAL};
                       }
-                    return (StateInfo) {.result = R_FINAL_NOADD, .lex = STRING_LIT};
+                    return (StateInfo) {.result = R_ERROR};
             }
 
         case S_START_OF_COMMENT_OR_DIV:
@@ -583,8 +583,8 @@ Token scan_next_token(FILE *file, bool expect_prolog)
                 exit(1);
             }
             char* string = charListToString(&str);
-            fprintf(stderr, "Received token is invalid, lexical analysis error,"
-                    " exiting...\n");
+            fprintf(stderr, "\nscanner: Received token \"%s%c\" is invalid, lexical analysis error,"
+                    " exiting...\n", string, c);
             free(string);
             exit(1);
         }
