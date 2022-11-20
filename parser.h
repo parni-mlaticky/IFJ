@@ -65,4 +65,6 @@ bool typeExpansion(tokList* tl);
 
 bool typeNameExpansion(tokList* tl, bool questionMark);
 bool blockExpansion(tokList* tl);
+
+bool isRelOperator(terminalType tType);
 #endif

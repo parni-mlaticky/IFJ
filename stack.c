@@ -82,6 +82,7 @@ stackElement* findHandle(stack* s){
     while(t && t->data.etype != HANDLE){
         t = t->next;
     }
+    if(!t) return NULL;
     if(t->data.etype != HANDLE){
         return NULL;
     }

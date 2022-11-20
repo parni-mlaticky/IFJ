@@ -192,7 +192,7 @@ bool precParseCheckRule(stackElement* elem1, stackElement* elem2, stackElement* 
     return false;
 }
 
-void precParseReduction(stack* s){
+void precParseReduction(stack* s, bool* relOpInExp){
     stackElement* handle = findHandle(s);
     if(!handle) syntaxError();
     stackElement* iter = handle;
@@ -219,6 +219,12 @@ void precParseReduction(stack* s){
             break;    
         case 3:
             if(precParseCheckRule(handle->prev, handle->prev->prev, handle->prev->prev->prev)){
+                if(isRelOperator(handle->prev->prev->data.tType)) *relOpInExp = true;
+
+                // AFTER NONTERMINAL TYPES ARE IMPLEMENTED, CHECK IF LEFT SIDE OF ASSIGNMENT IS LVALUE! FIXME
+                if(handle->prev->prev->data.tType == AS){
+
+                }
                 stackMultiPop(s, count+1);
                 stackPushNonterminal(s);
             }
@@ -237,7 +243,10 @@ bool precParser(tokList* tl){
     stack s;
     stackInit(&s);
 
-    // counts parentheses in the expression to differentiate between the end par of if()
+    // because expression like $a === $b === $c is invalid
+    bool relOpInExp = false;
+
+    // counts parentheses in the expression to differentiate between the end par of if() and parentheses in the expression
     int parCount = 0;
 
     stackPushTerminal(&s, DOLLAR, NULL);
@@ -247,17 +256,19 @@ bool precParser(tokList* tl){
         token = tokListGetValue(tl);
         if(!token) syntaxError();
         if(((compareLexTypes(token, PAR_R) || compareLexTypes(token, SEMICOLON)) && parCount == 0)){
-            if(containsOnlyTopNonterm(&s)){
+            if(containsOnlyTopNonterm(&s) || stackIsEmpty(&s)){
                 break;
             }
             else{
                 while(!containsOnlyTopNonterm(&s)){
-                    precParseReduction(&s);
+                    precParseReduction(&s, &relOpInExp);
                 }
                 break;
             }
         }
+
         top = getTopTerminal(&s);
+        if(isRelOperator(lexEnumToTerminalEnum(token->lex)) && relOpInExp) syntaxError();
         opPrecedence prec = getPrecedence(top->data.tType, token->lex);
         if(prec == P_LESS){
             stackInsertHandle(&s);
@@ -284,7 +295,7 @@ bool precParser(tokList* tl){
             getNextToken(tl);
         }
         else if(prec == P_GREATER){
-            precParseReduction(&s);
+            precParseReduction(&s, &relOpInExp);
         }
         else if(prec == P_EQ){
             stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
@@ -292,7 +303,10 @@ bool precParser(tokList* tl){
             getNextToken(tl);
         }
     }
-    if(containsOnlyTopNonterm(&s) && (token->lex == SEMICOLON || token->lex == PAR_R)){
+    if(containsOnlyTopNonterm(&s) && token->lex == PAR_R){
+        result = true;
+    }
+    if((containsOnlyTopNonterm(&s) || stackIsEmpty(&s)) && token->lex == SEMICOLON){
         result = true;
     }
     return result;
@@ -383,6 +397,7 @@ bool declareStExpansion(tokList* tl){
 
     t = getNextToken(tl);
     declareSt = declareSt && compareLexTypes(t, INT_LIT);
+    if(t) declareSt = declareSt && (t->integer == 1);
 
     t = getNextToken(tl);
     declareSt = declareSt && compareLexTypes(t, PAR_R);
@@ -561,3 +576,10 @@ bool blockExpansion(tokList* tl){
 }
 
 
+bool isRelOperator(terminalType tType){
+    if(tType == EQ || tType == NEQ || tType == G
+    || tType == L || tType == LEQ || tType == GEQ){
+        return true;
+    }
+    return false;
+}
