@@ -43,6 +43,47 @@ terminalType lexEnumToTerminalEnum(Lex lex){
     }
 }
 
+dataType dataTypeCompatibilityCheckOrConversion(Nonterminal* nt1, stackElement* operator, Nonterminal* nt2){
+    // In this case it is not an operator but a nonterminal with parentheses around it - (E)
+    if(operator->data.etype == NONTERMINAL){
+        return operator->data.nonterminal->dType;
+    }
+
+    switch(operator->data.tType){
+        case PLUS: case MINUS: case MUL:
+            if(nt1->dType == INT && nt2->dType == INT)
+                return INT;
+            if((nt1->dType == FLOAT || nt2->dType == FLOAT) && (nt1->dType == INT || nt2->dType == INT))
+                return FLOAT;
+            if(nt1->dType == UNKNOWN || nt2->dType == UNKNOWN)
+                return UNKNOWN;    
+            else semanticError(7); 
+        break;
+        case DIV:
+            if((nt1->dType == INT || nt1->dType == FLOAT) && (nt2->dType == INT || nt2->dType == FLOAT)){
+                return FLOAT;
+            }
+            else semanticError(7);
+        break;
+
+        case CAT:
+            if(nt1->dType == STRING && nt2->dType == STRING){
+                return STRING;
+            }
+            else semanticError(7);
+        break;    
+        case AS:
+            return nt2->dType;
+
+        // WE WILL NEED TO IMPLEMENT ANOTHER TYPE (BOOL) FOR THESE (i guess)
+        case EQ: case GEQ: case LEQ: case NEQ: case L: case G:
+            if((nt1->dType == FLOAT || nt1->dType == INT) && (nt2->dType == FLOAT || nt2->dType == INT)) return INT;
+            if(nt1->dType == STRING && nt2->dType == STRING) return INT;        
+        break;    
+        default: exit(99);
+    }
+    exit(99);
+}
 
 opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
     terminalType lexToTerm = lexEnumToTerminalEnum(nextTerm);
@@ -192,6 +233,14 @@ bool precParseCheckRule(stackElement* elem1, stackElement* elem2, stackElement* 
     return false;
 }
 
+bool checkIfLValue(stackElement* elem){
+    if(elem->data.etype != NONTERMINAL) return false;
+    if(elem->data.nonterminal->isLValue) return true;
+    return false;
+}
+
+
+
 void precParseReduction(stack* s, bool* relOpInExp){
     stackElement* handle = findHandle(s);
     if(!handle) syntaxError();
@@ -207,8 +256,10 @@ void precParseReduction(stack* s, bool* relOpInExp){
             break;
         case 1:
             if(precParseCheckRule(handle->prev, NULL, NULL)){
+                stackElement* tmp = malloc(sizeof(stackElement));
+                memcpy(tmp, handle->prev, sizeof(stackElement));
                 stackMultiPop(s, count+1);
-                stackPushNonterminal(s);
+                stackPushNonterminal(s, NULL, tmp);
             }
             else syntaxError();
             break;
@@ -221,12 +272,16 @@ void precParseReduction(stack* s, bool* relOpInExp){
             if(precParseCheckRule(handle->prev, handle->prev->prev, handle->prev->prev->prev)){
                 if(isRelOperator(handle->prev->prev->data.tType)) *relOpInExp = true;
 
-                // AFTER NONTERMINAL TYPES ARE IMPLEMENTED, CHECK IF LEFT SIDE OF ASSIGNMENT IS LVALUE! FIXME
+                Nonterminal* newNt = malloc(sizeof(Nonterminal));
+                newNt->dType = dataTypeCompatibilityCheckOrConversion(
+                    handle->prev->data.nonterminal, handle->prev->prev, handle->prev->prev->prev->data.nonterminal
+                );
+            
                 if(handle->prev->prev->data.tType == AS){
-
+                    if(!checkIfLValue(handle->prev)) syntaxError();
                 }
                 stackMultiPop(s, count+1);
-                stackPushNonterminal(s);
+                stackPushNonterminal(s, newNt, NULL);
             }
             else syntaxError();
             break;
@@ -237,6 +292,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
 
     
 }
+
 
 bool precParser(tokList* tl){
     bool result = false;
@@ -272,6 +328,7 @@ bool precParser(tokList* tl){
         opPrecedence prec = getPrecedence(top->data.tType, token->lex);
         if(prec == P_LESS){
             stackInsertHandle(&s);
+            // TODO
             if(token->lex == FUN_ID){
                 stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
             }
@@ -341,6 +398,11 @@ bool isKeyword(Token* t){
 void syntaxError(){
     fprintf(stderr, "Syntax error, exiting...\n");
     exit(2);
+}
+
+void semanticError(int code){
+    fprintf(stderr, "Semantic error code %d, exiting...\n", code);
+    exit(code);
 }
 
 
@@ -441,7 +503,16 @@ bool blockSTExpansion(tokList* tl){
         else if(compareTerminalStrings(t, "while")) blockSt = whileStExpansion(tl);
         else if(compareTerminalStrings(t, "return")) blockSt = returnStExpansion(tl);
         else if(compareTerminalStrings(t, "function")) blockSt = false;
-        else blockSt = precParser(tl);
+        else{ 
+            blockSt = precParser(tl);
+            t = getNextToken(tl);
+            blockSt = blockSt && compareLexTypes(t, SEMICOLON);
+        }    
+    }
+    else if(compareLexTypes(t, INT_LIT) || compareLexTypes(t, FLOAT_LIT) || compareLexTypes(t, STRING_LIT)){
+        blockSt = precParser(tl);
+        t = getNextToken(tl);
+        blockSt = blockSt && compareLexTypes(t, SEMICOLON);
     }
     return blockSt;
 }
@@ -459,8 +530,18 @@ bool STExpansion(tokList* tl){
         else if(compareTerminalStrings(t, "if")) St = ifStExpansion(tl);
         else if(compareTerminalStrings(t, "while")) St = whileStExpansion(tl);
         else if(compareTerminalStrings(t, "return")) St = returnStExpansion(tl);
-        else St = precParser(tl);
+        else{
+             St = precParser(tl);
+             t = getNextToken(tl);
+             St = St && compareLexTypes(t, SEMICOLON);
+        }     
     }
+    else if(compareLexTypes(t, INT_LIT) || compareLexTypes(t, FLOAT_LIT) || compareLexTypes(t, STRING_LIT)){
+        St = precParser(tl);
+        t = getNextToken(tl);
+        St = St && compareLexTypes(t, SEMICOLON);
+    }
+    
     return St;
 }
 

@@ -21,6 +21,7 @@ bool precParser(tokList* tl);
 
 bool isKeyword(Token* t);
 
+void semanticError(int code);
 void syntaxError();
 
 terminalType lexEnumToTerminalEnum(Lex lex);
@@ -35,6 +36,7 @@ bool compareTerminalStrings(Token* inputTerminal, char* stackTerminal);
 
 bool recursiveDescent(tokList* tl);
 
+dataType dataTypeCompatibilityCheckOrConversion(Nonterminal* nt1, stackElement* operator, Nonterminal* nt2);
 
 bool progExpansion(tokList* tl);
 bool declareStExpansion(tokList* tl);

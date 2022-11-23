@@ -1,4 +1,6 @@
 #include "stack.h"
+#include "string.h"
+
 
 
 void stackInit(stack* s){
@@ -34,9 +36,42 @@ void stackPushTerminal(stack* s, terminalType t, Token* token){
     s->top = newElement;
 }
 
-void stackPushNonterminal(stack* s){
+void stackPushNonterminal(stack* s, Nonterminal* nt, stackElement* elem){
     stackElement* newElement = malloc(sizeof(stackElement));
     newElement->data.etype = NONTERMINAL;
+    if(!nt){
+        if(!elem) exit(99);
+        Nonterminal* newNonterminal = malloc(sizeof(Nonterminal));
+        newNonterminal->isLValue = false;
+        switch(elem->data.token->lex){
+            case INT_LIT:
+                newNonterminal->dType = INT;
+                newNonterminal->integerV = elem->data.token->integer;
+                break;
+            case STRING_LIT:
+                newNonterminal->dType = STRING;
+                newNonterminal->stringV = elem->data.token->string;
+                break;
+            case FLOAT_LIT:
+                newNonterminal->dType = FLOAT;
+                newNonterminal->floatV = elem->data.token->decimal;
+                break;
+            case FUN_ID:
+                // later when we have symtable it will instead be the return value of the function in case of FUN_ID
+                // and the data type of the variable in case of VAR_ID TODO
+                newNonterminal->dType = UNKNOWN;
+                break;
+            case VAR_ID:
+                newNonterminal->dType = UNKNOWN;
+                newNonterminal->isLValue = true;    
+                break;
+            default: exit(99);
+        }
+        newElement->data.nonterminal = newNonterminal;
+    } // if(!nt)
+    else{
+        newElement->data.nonterminal = nt;
+    }
     newElement->data.tType = 0;
     newElement->next = s->top;
     s->top->prev = newElement;
@@ -62,7 +97,7 @@ void stackDispose(stack* s){
 }
 
 bool stackIsEmpty(stack* s){
-    if(!s->top){
+    if(s->top->data.etype == TERMINAL && s->top->data.tType == DOLLAR){
         return true;
     }
     return false;

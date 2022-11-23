@@ -1,4 +1,5 @@
 #include "list.h"
+#include "variable.h"
 
 #ifndef GENERIC_LIST
 #define GENERIC_LIST(TYPE, TYPE_NAME)                                           \
@@ -56,6 +57,8 @@
 
 GENERIC_LIST(char, char)
 GENERIC_LIST(Token*, tok)
+GENERIC_LIST(variable, var)
+
 
 // Converts the charList to char*
 char* charListToString(charList *l){
