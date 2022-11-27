@@ -7,7 +7,7 @@
 #include "scanner.h"
 #include "stack.h"
 
-#define KEYWORD_COUNT 9
+#define KEYWORD_COUNT 11
 
 typedef enum{
     P_LESS,
