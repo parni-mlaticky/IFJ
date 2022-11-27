@@ -1,7 +1,4 @@
 #include "stack.h"
-#include "string.h"
-
-
 
 void stackInit(stack* s){
     s->top = NULL;
@@ -10,20 +7,20 @@ void stackInit(stack* s){
 bool containsOnlyTopNonterm(stack* s){
     if(!s->top) return false;
     if(s->top->data.etype == NONTERMINAL && s->top->next){
-        if(s->top->next->data.etype == TERMINAL && s->top->next->data.tType == DOLLAR){
+        if(s->top->next->data.etype == TERMINAL && s->top->next->data.terminal->tType == DOLLAR){
             return true;
         }
     }
     return false;
 }
 
-void stackPushTerminal(stack* s, terminalType t, Token* token){
+void stackPushTerminal(stack* s, terminalType tType, Token* token){
     stackElement* newElement = malloc(sizeof(stackElement));
+    Terminal* terminal = malloc(sizeof(Terminal));
+    terminal->tType = tType;
+    terminal->token = token;
+    newElement->data.terminal = terminal;
     newElement->data.etype = TERMINAL;
-    newElement->data.tType = t;
-    if(t == OP){
-        newElement->data.token = token;
-    }
     if(!s->top){
         newElement->prev = NULL;
         newElement->next = NULL;
@@ -36,43 +33,13 @@ void stackPushTerminal(stack* s, terminalType t, Token* token){
     s->top = newElement;
 }
 
-void stackPushNonterminal(stack* s, Nonterminal* nt, stackElement* elem){
+
+void stackPushNonterminal(stack* s, Nonterminal* nonterm){
     stackElement* newElement = malloc(sizeof(stackElement));
+    
     newElement->data.etype = NONTERMINAL;
-    if(!nt){
-        if(!elem) exit(99);
-        Nonterminal* newNonterminal = malloc(sizeof(Nonterminal));
-        newNonterminal->isLValue = false;
-        switch(elem->data.token->lex){
-            case INT_LIT:
-                newNonterminal->dType = INT;
-                newNonterminal->integerV = elem->data.token->integer;
-                break;
-            case STRING_LIT:
-                newNonterminal->dType = STRING;
-                newNonterminal->stringV = elem->data.token->string;
-                break;
-            case FLOAT_LIT:
-                newNonterminal->dType = FLOAT;
-                newNonterminal->floatV = elem->data.token->decimal;
-                break;
-            case FUN_ID:
-                // later when we have symtable it will instead be the return value of the function in case of FUN_ID
-                // and the data type of the variable in case of VAR_ID TODO
-                newNonterminal->dType = UNKNOWN;
-                break;
-            case VAR_ID:
-                newNonterminal->dType = UNKNOWN;
-                newNonterminal->isLValue = true;    
-                break;
-            default: exit(99);
-        }
-        newElement->data.nonterminal = newNonterminal;
-    } // if(!nt)
-    else{
-        newElement->data.nonterminal = nt;
-    }
-    newElement->data.tType = 0;
+    newElement->data.nonterminal = nonterm;
+
     newElement->next = s->top;
     s->top->prev = newElement;
     newElement->prev = NULL;
@@ -97,7 +64,7 @@ void stackDispose(stack* s){
 }
 
 bool stackIsEmpty(stack* s){
-    if(s->top->data.etype == TERMINAL && s->top->data.tType == DOLLAR){
+    if(s->top->data.etype == TERMINAL && s->top->data.terminal->tType == DOLLAR){
         return true;
     }
     return false;
@@ -134,7 +101,7 @@ void stackInsertHandle(stack* s){
     stackElement* termTop = getTopTerminal(s);
     stackElement* new = malloc(sizeof(stackElement));
     new->data.etype = HANDLE;
-    new->data.tType = 0;
+    new->data.terminal = NULL;
 
     if(termTop == s->top){
         new->next = s->top;

@@ -58,6 +58,7 @@
 GENERIC_LIST(char, char)
 GENERIC_LIST(Token*, tok)
 GENERIC_LIST(variable, var)
+GENERIC_LIST(Nonterminal*, nonterm)
 
 
 // Converts the charList to char*

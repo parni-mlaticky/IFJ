@@ -1,11 +1,14 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "token.h"
 #include <stdbool.h>
+#include "token.h"
 #include "list.h"
 #include "scanner.h"
 #include "stack.h"
+#include "precParsingEnums.h"
+#include "Nonterminal.h"
+#include "funcall.h"
 
 #define KEYWORD_COUNT 11
 
@@ -14,6 +17,12 @@ typedef enum{
     P_GREATER,
     P_EQ
 } opPrecedence;
+
+typedef enum{
+    EXP_TERM,
+    EXP_OP_EXP,
+    EXP_PAR
+} expressionRule;
 
 bool parse_file(FILE* file);
 
@@ -72,4 +81,20 @@ bool typeNameExpansion(tokList* tl, bool questionMark);
 bool blockExpansion(tokList* tl);
 
 bool isRelOperator(terminalType tType);
+
+void debugPrintExprTree(Nonterminal* root);
+
+
+
+Nonterminal* createIntLiteralNonterminal(int value);
+
+Nonterminal* createStringLiteralNonterminal(char* string);
+
+Nonterminal* createFloatLiteralNonterminal(double value);
+
+Nonterminal* createFuncallNonterminal(char* funId, nontermList* args);
+
+Nonterminal* createVariableNonterminal(char* varId, dataType dType);
+
+Nonterminal* createExprNonterminal(Nonterminal* left, Nonterminal* right, terminalType operator);
 #endif

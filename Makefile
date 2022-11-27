@@ -82,3 +82,8 @@ clean:
 	rm -f $(BUILD_DIR)/*.o
 	rm $(TARGET)
 
+
+parserTest:
+	gcc parser.c scanner.c stack.c precparsetest.c list.c -o precparsetest -g
+
+
