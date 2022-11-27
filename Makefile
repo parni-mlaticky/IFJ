@@ -5,7 +5,8 @@ TARGET := ./ifj22
 
 
 BUILD_DIR := ./increment/
-RUN_FLAGS := test-scripts/test.php
+RUN_FLAGS :=
+RUN_FILE_PATH := test-scripts/test.php
 
 ifeq ($(release),1)
 	CFLAGS += -o3
@@ -35,7 +36,7 @@ $(BUILD_DIR)%.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 run: $(TARGET)
-	./$< $(RUN_FLAGS)
+	cat $(RUN_FILE_PATH) | ./$< $(RUN_FLAGS)
 
 test: $(TARGET)
 	$(TARGET) test-scripts/test.php >test.php.output

@@ -21,6 +21,7 @@ typedef enum
     S_BLOCK_COMMENT,
     S_POSSIBLE_END_OF_BLOCK_COMMENT,
     S_QUESTION_MARK,
+    S_START_VARIABLE_ID,
     S_VARIABLE_ID,
     S_GREATER_THAN,
     S_LESS_EQUAL,
@@ -28,6 +29,7 @@ typedef enum
     S_INT_LITERAL,
     S_FLOAT_LITERAL_DEC,
     S_FLOAT_LITERAL_E,
+    S_FLOAT_LITERAL_E_NUM,
     S_STRING_LITERAL_DQ,
     S_STRING_LITERAL_DQ_ESCAPE,
     S_STRING_LITERAL_SQ,
@@ -209,7 +211,7 @@ EscapeSeqState process_str_escape_sequence(char* c, charList* buffer, EscapeSeqS
  * @param c Current character
  * @return New state
  */
-StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory) {
+StateInfo get_next_state(ScannerState current_state, int *c, FSMMemory* memory) {
     switch (current_state) {
         case S_PROLOG:
             if (*c == '<') {
@@ -258,7 +260,7 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
                     return (StateInfo) {.result = R_SKIP, .next_state = S_START_OF_COMMENT_OR_DIV};
 
                 case '$':
-                    return (StateInfo) {.result = R_SKIP, .next_state = S_VARIABLE_ID};
+                    return (StateInfo) {.result = R_SKIP, .next_state = S_START_VARIABLE_ID};
 
                 case '>':
                     return (StateInfo) {.result = R_SKIP, .next_state = S_GREATER_THAN};
@@ -283,6 +285,9 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
 
                 case '!':
                     return (StateInfo) {.result = R_SKIP, .next_state = S_NOT_EQUAL};
+
+                case EOF:
+                    return (StateInfo) {.result = R_FINAL_SKIP, .lex = END};
 
                 default:
                     if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') || (*c == '_')){
@@ -319,6 +324,8 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
             switch (*c) {
                 case '*':
                     return (StateInfo) {.result = R_SKIP, .next_state = S_POSSIBLE_END_OF_BLOCK_COMMENT};
+                case EOF:
+                    return (StateInfo) {.result = R_ERROR};
 
                 default:
                     return (StateInfo) {.result = R_SKIP, .next_state = S_BLOCK_COMMENT};
@@ -332,6 +339,9 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
                 case '/':
                     return (StateInfo) {.result = R_SKIP, .next_state = S_START};
 
+                case EOF:
+                    return (StateInfo) {.result = R_ERROR};
+
                 default:
                     return (StateInfo) {.result = R_SKIP, .next_state = S_BLOCK_COMMENT};
             }
@@ -341,6 +351,14 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
                 return (StateInfo) {.result = R_FINAL_SKIP, .lex = SCRIPT_STOP};
             }
             return (StateInfo) {.result = R_FINAL_NOADD, .lex = QUESTION_MARK};
+
+        case S_START_VARIABLE_ID:
+            if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') ||
+                (*c >= '0' && *c <= '9') || (*c == '_')) {
+                return (StateInfo) {.result = R_ADD, .next_state = S_VARIABLE_ID};
+            }
+            // Empty variable name
+            return (StateInfo) {.result = R_ERROR};
 
         case S_VARIABLE_ID:
             if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') ||
@@ -405,6 +423,9 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
             if (*c == '.') {
                 return (StateInfo) {.result = R_ADD, .next_state = S_FLOAT_LITERAL_DEC};
             }
+            if (*c == 'E' || *c == 'e') {
+                return (StateInfo) {.result = R_ADD, .next_state = S_FLOAT_LITERAL_E};
+            }
             return (StateInfo) {.result = R_FINAL_NOADD, .lex = INT_LIT};
 
         case S_FLOAT_LITERAL_DEC:
@@ -417,6 +438,12 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
             return (StateInfo) {.result = R_FINAL_NOADD, .lex = FLOAT_LIT};
 
         case S_FLOAT_LITERAL_E:
+            if (*c >= '0' && *c <= '9') {
+                return (StateInfo) {.result = R_ADD, .next_state = S_FLOAT_LITERAL_E_NUM};
+            }
+            return (StateInfo) {.result = R_ERROR};
+
+        case S_FLOAT_LITERAL_E_NUM:
             if (*c >= '0' && *c <= '9') {
                 return (StateInfo) {.result = R_ADD, .next_state = S_FLOAT_LITERAL_E};
             }
@@ -433,10 +460,19 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
             if (*c == '$') {
                 return (StateInfo) {.result = R_ERROR};
             }
+            // EOF before string termination
+            if (*c == EOF) {
+                return (StateInfo) {.result = R_ERROR};
+            }
             return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_DQ};
 
         case S_STRING_LITERAL_DQ_ESCAPE:
-            memory->escape_seq_state = process_str_escape_sequence(c, &memory->memory, memory->escape_seq_state, &memory->unget, '"');
+            // EOF before string termination
+            if (*c == EOF) {
+                return (StateInfo) {.result = R_ERROR};
+            }
+
+            memory->escape_seq_state = process_str_escape_sequence((char*) c, &memory->memory, memory->escape_seq_state, &memory->unget, '"');
             if (memory->escape_seq_state == ESS_FINAL) {
                 return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_DQ};
             }
@@ -459,10 +495,18 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
             if (*c == '$') {
                 return (StateInfo) {.result = R_ERROR};
             }
+            // EOF before string termination
+            if (*c == EOF) {
+                return (StateInfo) {.result = R_ERROR};
+            }
             return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_SQ};
 
         case S_STRING_LITERAL_SQ_ESCAPE:
-            memory->escape_seq_state = process_str_escape_sequence(c, &memory->memory, memory->escape_seq_state, &memory->unget, '\'');
+            // EOF before string termination
+            if (*c == EOF) {
+                return (StateInfo) {.result = R_ERROR};
+            }
+            memory->escape_seq_state = process_str_escape_sequence((char*) c, &memory->memory, memory->escape_seq_state, &memory->unget, '\'');
             if (memory->escape_seq_state == ESS_FINAL) {
                 return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_SQ};
             }
@@ -533,8 +577,14 @@ Token scan_next_token(FILE *file, bool expect_prolog)
     charListInit(&memory.memory);
 
     int c;
-    while ((c = fgetc(file)) != EOF) {
-        state_info = get_next_state(currentState, (char*) &c, &memory);
+    bool seen_eof = false;
+    while (!seen_eof) {
+        c = fgetc(file);
+        if (c == EOF) seen_eof = true;
+
+        // Calling the lexical state machine implementation to get
+        // the next state (or finsihed lex).
+        state_info = get_next_state(currentState, &c, &memory);
         currentState = state_info.next_state;
 
         // Hacking string literal escape sequences to work.
