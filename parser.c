@@ -201,10 +201,9 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             }      
             else syntaxError();
             break;
-
-        default: exit(99);  
     }
-    return DOLLAR;
+
+    exit(99);
 }
 
 // Operators are >= 4 in the enum
@@ -289,6 +288,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
                 case FUN_ID:
                     ;
                     Nonterminal* funcNonterm = createFuncallNonterminal(tmp->data.terminal->token->string, NULL);
+                    (void) funcNonterm; // FIXME Cast to void to supress warning.
                     break;
                 default:
                     break;    
