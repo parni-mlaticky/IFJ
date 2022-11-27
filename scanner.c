@@ -285,7 +285,7 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
                     return (StateInfo) {.result = R_SKIP, .next_state = S_NOT_EQUAL};
 
                 default:
-                    if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z')){
+                    if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') || (*c == '_')){
                         return (StateInfo) {.result = R_ADD, .next_state = S_IDENTIFIER};
                       } 
                       else if((*c >= '0' && *c <= '9')) {
@@ -344,7 +344,7 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
 
         case S_VARIABLE_ID:
             if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') ||
-                (*c >= '0' && *c <= '9') || (*c == '-' || *c == '_')) {
+                (*c >= '0' && *c <= '9') || (*c == '_')) {
                 return (StateInfo) {.result = R_ADD, .next_state = S_VARIABLE_ID};
             }
             return (StateInfo) {.result = R_FINAL_NOADD, .lex = VAR_ID};
@@ -393,7 +393,7 @@ StateInfo get_next_state(ScannerState current_state, char *c, FSMMemory* memory)
 
         case S_IDENTIFIER:
             if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') ||
-                (*c >= '0' && *c <= '9') || (*c == '-' || *c == '_')) {
+                (*c >= '0' && *c <= '9') || (*c == '_')) {
                 return (StateInfo) {.result = R_ADD, .next_state = S_IDENTIFIER};
             }
             return (StateInfo) {.result = R_FINAL_NOADD, .lex = FUN_ID};
