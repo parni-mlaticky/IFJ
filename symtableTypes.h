@@ -4,7 +4,7 @@
 #include "variable.h"
 
 
-typedef struct function{
+typedef struct{
     dataType returnType;
     varList* args;
     struct symtableElem* localTable;

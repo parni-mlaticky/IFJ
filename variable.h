@@ -1,8 +1,9 @@
 #pragma once
-
-#include "stack.h"
+#include <stdbool.h>
+#include "precParsingEnums.h"
 
 typedef struct variable{
     char* name;
     dataType dType;
+    bool nullable;
 } variable;

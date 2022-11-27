@@ -4,13 +4,12 @@
  * @brief Macro definition for a generic list type
 */
 
-
 #pragma once
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "token.h"
-#include "variable.h"
+#include "Nonterminal.h"
 
 
 #ifndef GENERIC_LIST_H
@@ -35,6 +34,8 @@
     void TYPE_NAME##ListNext(TYPE_NAME##List* list);                 \
     TYPE TYPE_NAME##ListGetValue(TYPE_NAME##List* list);             \
 
+
+GENERIC_LIST_H(struct Nonterminal*, nonterm)
 GENERIC_LIST_H(char, char)
 GENERIC_LIST_H(Token*, tok)
 GENERIC_LIST_H(variable, var)

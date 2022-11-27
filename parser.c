@@ -42,10 +42,12 @@ terminalType lexEnumToTerminalEnum(Lex lex){
     }
 }
 
-dataType dataTypeCompatibilityCheckOrConversion(Nonterminal* nt1, stackElement* operator, Nonterminal* nt2){
+
+
+/* dataType dataTypeCompatibilityCheckOrConversion(Nonterminal* nt1, stackElement* operator, Nonterminal* nt2){
     // In this case it is not an operator but a nonterminal with parentheses around it - (E)
     if(operator->data.etype == NONTERMINAL){
-        return operator->data.nonterminal->dType;
+        return operator->data.nonterminal.;
     }
 
     switch(operator->data.tType){
@@ -77,13 +79,15 @@ dataType dataTypeCompatibilityCheckOrConversion(Nonterminal* nt1, stackElement* 
         // WE WILL NEED TO IMPLEMENT ANOTHER TYPE (BOOL) FOR THESE (i guess)
         case EQ: case GEQ: case LEQ: case NEQ: case L: case G:
             if((nt1->dType == FLOAT || nt1->dType == INT) && (nt2->dType == FLOAT || nt2->dType == INT)) return INT;
-            if(nt1->dType == STRING && nt2->dType == STRING) return INT;        
+            if(nt1->dType == STRING && nt2->dType == STRING) return INT;     
+            else semanticError(7);   
         break;    
         default: exit(99);
     }
     exit(99);
-}
+} */
 
+// Implementation of the precedence table
 opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
     terminalType lexToTerm = lexEnumToTerminalEnum(nextTerm);
     switch (stackTerm){
@@ -205,36 +209,39 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
 
 // Operators are >= 4 in the enum
 bool isOperator(stackElement* elem){
-    if(elem->data.tType >= 4){
+    if(elem->data.terminal->tType >= 4){
         return true;
     }
     return false;
 }
 
-bool precParseCheckRule(stackElement* elem1, stackElement* elem2, stackElement* elem3){
+expressionRule precParseCheckRule(stackElement* elem1, stackElement* elem2, stackElement* elem3){
     if(elem1 && !elem2 && !elem3){
         // Rule E => i
-        if(elem1->data.etype == TERMINAL && elem1->data.tType == OP){
-            return true;
+        if(elem1->data.etype == TERMINAL && elem1->data.terminal->tType == OP){
+            return EXP_TERM;
         }
         else syntaxError();
     }
     if(elem1 && elem2 && elem3){
         // rule E => (E)
-        if(elem1->data.tType == LPAR && elem2->data.etype == NONTERMINAL && elem3->data.tType == RPAR){
-            return true;
+        if(elem1->data.terminal->tType == LPAR && elem2->data.etype == NONTERMINAL && elem3->data.terminal->tType == RPAR){
+            return EXP_PAR;
         }
         // rule E => E <OP> E
         if(elem1->data.etype == NONTERMINAL && isOperator(elem2) && elem3->data.etype == NONTERMINAL){
-            return true;
+            return EXP_OP_EXP;
         }
     }
     return false;
 }
 
 bool checkIfLValue(stackElement* elem){
-    if(elem->data.etype != NONTERMINAL) return false;
-    if(elem->data.nonterminal->isLValue) return true;
+    if(elem->data.etype == NONTERMINAL){
+        if(elem->data.nonterminal->NTType == VAR_ID_TERM){
+            return true;
+        }
+    }
     return false;
 }
 
@@ -249,47 +256,158 @@ void precParseReduction(stack* s, bool* relOpInExp){
         iter = iter->prev;
         count++;
     }
-    switch (count) {
-        case 0:
-            syntaxError();
-            break;
-        case 1:
-            if(precParseCheckRule(handle->prev, NULL, NULL)){
-                stackElement* tmp = malloc(sizeof(stackElement));
-                memcpy(tmp, handle->prev, sizeof(stackElement));
-                stackMultiPop(s, count+1);
-                stackPushNonterminal(s, NULL, tmp);
-            }
-            else syntaxError();
-            break;
+    if(count == 1){
+        if(precParseCheckRule(handle->prev, NULL, NULL) == EXP_TERM){
+            stackElement* tmp = malloc(sizeof(stackElement));
+            memcpy(tmp, handle->prev, sizeof(stackElement));
+            stackMultiPop(s, count+1);
+            switch(tmp->data.terminal->token->lex){
+                case INT_LIT:
+                    ;
+                    Nonterminal* intLit = createIntLiteralNonterminal(tmp->data.terminal->token->integer);
+                    stackPushNonterminal(s, intLit);
+                    break;
 
+                case FLOAT_LIT:
+                    ;  
+                    Nonterminal* floatLit = createFloatLiteralNonterminal(tmp->data.terminal->token->decimal);
+                    stackPushNonterminal(s, floatLit);
+                    break;
 
-        case 2:
-            syntaxError();
-            break;    
-        case 3:
-            if(precParseCheckRule(handle->prev, handle->prev->prev, handle->prev->prev->prev)){
-                if(isRelOperator(handle->prev->prev->data.tType)) *relOpInExp = true;
+                case STRING_LIT: 
+                    ; 
+                    Nonterminal* stringLit = createStringLiteralNonterminal(tmp->data.terminal->token->string);
+                    stackPushNonterminal(s, stringLit);
+                    break;
 
-                Nonterminal* newNt = malloc(sizeof(Nonterminal));
-                newNt->dType = dataTypeCompatibilityCheckOrConversion(
-                    handle->prev->data.nonterminal, handle->prev->prev, handle->prev->prev->prev->data.nonterminal
-                );
-            
-                if(handle->prev->prev->data.tType == AS){
-                    if(!checkIfLValue(handle->prev)) syntaxError();
-                }
-                stackMultiPop(s, count+1);
-                stackPushNonterminal(s, newNt, NULL);
-            }
-            else syntaxError();
-            break;
+                case VAR_ID:
+                    ;
+                    Nonterminal* varNonterm = createVariableNonterminal(tmp->data.terminal->token->string, UNKNOWN); // FIXME
+                    stackPushNonterminal(s, varNonterm);
+                    break;
 
-        default:
-            syntaxError();       
+                case FUN_ID:
+                    ;
+                    Nonterminal* funcNonterm = createFuncallNonterminal(tmp->data.terminal->token->string, NULL);
+                    break;
+                default:
+                    break;    
+            }            
+        }
+        else syntaxError();
     }
+   
+    else if(count == 3){
+        if(precParseCheckRule(handle->prev, handle->prev->prev, handle->prev->prev->prev) == EXP_OP_EXP){
+            if(isRelOperator(handle->prev->prev->data.terminal->tType)) *relOpInExp = true;
+            
+            
+            if(handle->prev->prev->data.terminal->tType == AS){
+                if(!checkIfLValue(handle->prev)){
+                    syntaxError();
+                }
+                else{
+                    // put variable in symtable TODO
+                }
+            }
 
+            Nonterminal* operand1 = malloc(sizeof(Nonterminal));
+            Nonterminal* operand2 = malloc(sizeof(Nonterminal));
+            memcpy(operand1, handle->prev->data.nonterminal, sizeof(Nonterminal));
+            memcpy(operand2, handle->prev->prev->prev->data.nonterminal, sizeof(Nonterminal));
+
+            stackElement* op = malloc(sizeof(stackElement));
+            memcpy(op, handle->prev->prev, sizeof(stackElement));
+
+            
+            Nonterminal* nonterm = createExprNonterminal(operand1, operand2, op->data.terminal->tType);
+            stackMultiPop(s, count+1);
+            stackPushNonterminal(s, nonterm);
+            free(op);
+        }
+    }   
+    else syntaxError();      
+}
+
+Nonterminal* createIntLiteralNonterminal(int value){
+    Nonterminal* intLit = malloc(sizeof(Nonterminal));
+    intLit->NTType = LITERAL_TERM;
+    intLit->term.integerLit = value;
+    intLit->dType = INT;
+
+
+    intLit->expr.left = NULL;
+    intLit->expr.right = NULL;
+
+    return intLit;
+}
+
+Nonterminal* createStringLiteralNonterminal(char* string){
+    Nonterminal* stringLit = malloc(sizeof(Nonterminal));
+    stringLit->NTType = LITERAL_TERM;
+    stringLit->term.stringLit = string;
+    stringLit->dType = STRING;
+
+    stringLit->expr.left = NULL;
+    stringLit->expr.right = NULL;
+
+    return stringLit;
+}
+
+Nonterminal* createFloatLiteralNonterminal(double value){
+    Nonterminal* floatLit = malloc(sizeof(Nonterminal));
+    floatLit->NTType = LITERAL_TERM;
+    floatLit->term.floatLit = value;
+    floatLit->dType = FLOAT;
+
+    floatLit->expr.left = NULL;
+    floatLit->expr.right = NULL;
+
+    return floatLit;
+}
+
+Nonterminal* createFuncallNonterminal(char* funId, nontermList* args){
+    Nonterminal* funcNonterm = malloc(sizeof(Nonterminal));
+    funcall* func = malloc(sizeof(funcall));
+    func->funId = funId;
+    func->args = args;
+
+
+    funcNonterm->NTType = FUNCALL_TERM;
+
+    funcNonterm->expr.left = NULL;
+    funcNonterm->expr.right = NULL;
+    funcNonterm->expr.op = DOLLAR;
+
+    funcNonterm->term.func = func;
     
+    return funcNonterm;
+}
+
+Nonterminal* createVariableNonterminal(char* varId, dataType dType){
+    Nonterminal* varNonterm = malloc(sizeof(Nonterminal));
+    variable* var = malloc(sizeof(variable));
+    var->name = varId;
+    var->dType = dType;
+    
+
+    varNonterm->NTType = VAR_ID_TERM;
+    varNonterm->expr.left = NULL;
+    varNonterm->expr.right = NULL;
+    varNonterm->expr.op = DOLLAR;
+    varNonterm->term.var = var;
+    return varNonterm;
+}
+
+Nonterminal* createExprNonterminal(Nonterminal* left, Nonterminal* right, terminalType operator){
+    Nonterminal* newNonterminal = malloc(sizeof(Nonterminal));
+
+    newNonterminal->expr.left = left;
+    newNonterminal->expr.right = right;
+    newNonterminal->expr.op = operator;
+
+    newNonterminal->NTType = EXPR;
+    return newNonterminal;
 }
 
 
@@ -324,7 +442,7 @@ bool precParser(tokList* tl){
 
         top = getTopTerminal(&s);
         if(isRelOperator(lexEnumToTerminalEnum(token->lex)) && relOpInExp) syntaxError();
-        opPrecedence prec = getPrecedence(top->data.tType, token->lex);
+        opPrecedence prec = getPrecedence(top->data.terminal->tType, token->lex);
         if(prec == P_LESS){
             stackInsertHandle(&s);
             // TODO
@@ -535,12 +653,12 @@ bool STExpansion(tokList* tl){
              St = St && compareLexTypes(t, SEMICOLON);
         }     
     }
-    else if(compareLexTypes(t, INT_LIT) || compareLexTypes(t, FLOAT_LIT) || compareLexTypes(t, STRING_LIT)){
+
+    else{
         St = precParser(tl);
         t = getNextToken(tl);
         St = St && compareLexTypes(t, SEMICOLON);
-    }
-    
+    }    
     return St;
 }
 
@@ -690,4 +808,43 @@ bool isRelOperator(terminalType tType){
         return true;
     }
     return false;
+}
+
+void debugPrintExprTree(Nonterminal* root){
+    if(!root->expr.left && !root->expr.right){
+        switch(root->NTType){
+            case VAR_ID_TERM:
+                printf("%s", root->term.var->name);
+                break;
+            case LITERAL_TERM:
+                switch(root->dType){
+                    case STRING:
+                        fprintf(stderr, "%s", root->term.stringLit);
+                        break;
+                    case INT:
+                        fprintf(stderr, "%d", root->term.integerLit);
+                        break;
+                    case FLOAT:
+                        fprintf(stderr, "%lf", root->term.floatLit);
+                        break;  
+                    default:
+                        break;        
+                }
+            default: break;    
+        }
+    }
+    else{
+        printf("\tEXPR\n");
+        debugPrintExprTree(root->expr.left);
+        switch(root->expr.op){
+            case PLUS:
+                fprintf(stderr, "\t+\t");
+                break;
+            case MINUS:
+                fprintf(stderr, "\t-\t");
+                break;
+            default: break;       
+        }
+        debugPrintExprTree(root->expr.right);
+    }
 }
