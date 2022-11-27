@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
     (void) argv;
 
     // TODO Change to stdin.
-    FILE* source_file = fopen(argv[1], "r");
+    FILE* source_file = stdin;
 
     bool res = parse_file(source_file);
     if(res){
