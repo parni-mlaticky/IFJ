@@ -25,9 +25,6 @@ typedef enum{
 } expressionRule;
 
 bool parse_file(FILE* file);
-
-bool precParser(tokList* tl);
-
 bool isKeyword(Token* t);
 
 void semanticError(int code);
@@ -84,7 +81,7 @@ bool isRelOperator(terminalType tType);
 
 void debugPrintExprTree(Nonterminal* root);
 
-
+bool precParser(tokList* tl, Nonterminal** finalNonterm);
 
 Nonterminal* createIntLiteralNonterminal(int value);
 
