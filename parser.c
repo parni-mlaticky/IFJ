@@ -2,9 +2,8 @@
 #include "parser.h"
 
 const char* keywords[] = { "if", "else", "declare", "function",
-                            "while", "int", "float",
-                            "void", "string"};
-
+                           "while", "int", "float", "void",
+                           "string", "null", "return"};
 
 terminalType lexEnumToTerminalEnum(Lex lex){
     switch(lex){
