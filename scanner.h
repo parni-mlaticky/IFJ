@@ -5,11 +5,13 @@
 #include "token.h"
 #include "lex.h"
 #include <stdbool.h>
+#include "list.h"
 
 /**
  * Reads the whole token from the input file and returns it as a token
  * @param file Input file
  * @return The new token
  */
-Token scan_next_token(FILE* file);
+Token scan_next_token(FILE* file, bool expect_prolog);
+void debug_print_tokens(tokList* list);
 #endif

@@ -30,8 +30,6 @@ typedef struct Token {
         int integer;
         // value of double number
         double decimal;
-        // will be used when we dont need to store the name of the lex (+ - * /, ...)
-        void* empty;
     };
 } Token;
 

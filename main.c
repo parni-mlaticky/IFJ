@@ -9,13 +9,13 @@ int main(int argc, char** argv) {
     // TODO Change to stdin.
     FILE* source_file = fopen(argv[1], "r");
 
-    Token* tokens = parse_file(source_file);
-
-    printf(">>> TOKENS <<<\n");
-    while (tokens->lex) {
-        printf("%d\n", tokens++->lex);
+    bool res = parse_file(source_file);
+    if(res){
+        printf("Syntax is OK\n");
+        exit(0);
+    } 
+    else {
+        printf("Syntax error\n");
+        exit(2);
     }
-    printf(">>> END OF TOKENS <<<\n");
-    //free(tokens);
-
 }
