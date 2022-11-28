@@ -411,14 +411,13 @@ Nonterminal* createExprNonterminal(Nonterminal* left, Nonterminal* right, termin
 }
 
 
-bool precParser(tokList* tl){
+bool precParser(tokList* tl, Nonterminal** finalNonterm){
     bool result = false;
     stack s;
     stackInit(&s);
 
     // because expression like $a === $b === $c is invalid
     bool relOpInExp = false;
-
     // counts parentheses in the expression to differentiate between the end par of if() and parentheses in the expression
     int parCount = 0;
 
@@ -482,6 +481,12 @@ bool precParser(tokList* tl){
     }
     if((containsOnlyTopNonterm(&s) || stackIsEmpty(&s)) && token->lex == SEMICOLON){
         result = true;
+    }
+    if(result){
+        *finalNonterm = s.top->data.nonterminal;
+    }
+    else{
+        *finalNonterm = NULL;
     }
     return result;
 }
@@ -611,7 +616,8 @@ bool blockSTExpansion(tokList* tl){
     bool blockSt = false;
     Token* t = tokListGetValue(tl);
     if(compareLexTypes(t, VAR_ID)){
-        blockSt = precParser(tl);
+        Nonterminal* expTree;
+        blockSt = precParser(tl, &expTree);
         t = getNextToken(tl);
         blockSt = blockSt && compareLexTypes(t, SEMICOLON);
     }
@@ -621,13 +627,15 @@ bool blockSTExpansion(tokList* tl){
         else if(compareTerminalStrings(t, "return")) blockSt = returnStExpansion(tl);
         else if(compareTerminalStrings(t, "function")) blockSt = false;
         else{ 
-            blockSt = precParser(tl);
+            Nonterminal* expTree;
+            blockSt = precParser(tl, &expTree);
             t = getNextToken(tl);
             blockSt = blockSt && compareLexTypes(t, SEMICOLON);
         }    
     }
     else if(compareLexTypes(t, INT_LIT) || compareLexTypes(t, FLOAT_LIT) || compareLexTypes(t, STRING_LIT)){
-        blockSt = precParser(tl);
+        Nonterminal* expTree;
+        blockSt = precParser(tl, &expTree);
         t = getNextToken(tl);
         blockSt = blockSt && compareLexTypes(t, SEMICOLON);
     }
@@ -638,7 +646,8 @@ bool STExpansion(tokList* tl){
     bool St = false;
     Token* t = tokListGetValue(tl);
     if(compareLexTypes(t, VAR_ID)){
-        St = precParser(tl);
+        Nonterminal* expTree;
+        St = precParser(tl, &expTree);
         t = getNextToken(tl);
         St = St && compareLexTypes(t, SEMICOLON);
     }
@@ -648,14 +657,16 @@ bool STExpansion(tokList* tl){
         else if(compareTerminalStrings(t, "while")) St = whileStExpansion(tl);
         else if(compareTerminalStrings(t, "return")) St = returnStExpansion(tl);
         else{
-             St = precParser(tl);
+            Nonterminal* expTree;
+             St = precParser(tl, &expTree);
              t = getNextToken(tl);
              St = St && compareLexTypes(t, SEMICOLON);
         }     
     }
 
     else{
-        St = precParser(tl);
+        Nonterminal* expTree;
+        St = precParser(tl, &expTree);
         t = getNextToken(tl);
         St = St && compareLexTypes(t, SEMICOLON);
     }    
@@ -693,7 +704,8 @@ bool ifStExpansion(tokList* tl){
     t = getNextToken(tl);
     ifSt = ifSt && compareLexTypes(t, PAR_L);
 
-    ifSt = ifSt && precParser(tl);
+    Nonterminal* expTree;
+    ifSt = ifSt && precParser(tl, &expTree);
 
     t = getNextToken(tl);
     ifSt = ifSt && compareLexTypes(t, PAR_R);
@@ -716,7 +728,8 @@ bool whileStExpansion(tokList* tl){
     t = getNextToken(tl);
     whileSt = whileSt && compareLexTypes(t, PAR_L);
 
-    whileSt = whileSt && precParser(tl);
+    Nonterminal* expTree;
+    whileSt = whileSt && precParser(tl, &expTree);
 
     t = getNextToken(tl);
     whileSt = whileSt && compareLexTypes(t, PAR_R) && blockExpansion(tl);
@@ -730,7 +743,8 @@ bool returnStExpansion(tokList* tl){
     t = getNextToken(tl);
     returnSt = compareTerminalStrings(t, "return");
 
-    returnSt = returnSt && precParser(tl);
+    Nonterminal* expTree;
+    returnSt = returnSt && precParser(tl, &expTree);
 
     t = getNextToken(tl);
     returnSt = returnSt && compareLexTypes(t, SEMICOLON);
