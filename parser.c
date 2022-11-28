@@ -288,7 +288,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
                 case FUN_ID:
                     ;
                     Nonterminal* funcNonterm = createFuncallNonterminal(tmp->data.terminal->token->string, NULL);
-                    (void) funcNonterm; // FIXME Cast to void to supress warning.
+                    stackPushNonterminal(s, funcNonterm);
                     break;
                 default:
                     break;    
@@ -478,6 +478,10 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
                   if(precParser(tl, &nonTerm)) {
                     nontermListAppend(funCall->args, nonTerm);
                     nextToken = tokListGetValue(tl);
+
+                    if(nextToken->lex == PAR_R) {
+                      break;
+                    }
     
                     nextToken = getNextToken(tl);
                     fprintf(stderr, "next token is: %d\n", nextToken->lex);
