@@ -99,7 +99,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             || lexToTerm == OP || lexToTerm == LPAR){
                 return P_LESS;
             }
-            else syntaxError();
+            else syntaxError(NULL);
             break;
 
         case OP:
@@ -110,7 +110,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             || lexToTerm == RPAR || lexToTerm == DOLLAR){
                 return P_GREATER;
             }
-            else syntaxError();
+            else syntaxError(NULL);
             break;
 
         case PLUS: case MINUS: case CAT:
@@ -124,7 +124,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             || lexToTerm == RPAR || lexToTerm == DOLLAR){
                 return P_GREATER;
             }
-            else syntaxError();
+            else syntaxError(NULL);
             break;
 
         case MUL: case DIV:
@@ -137,7 +137,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             || lexToTerm == RPAR || lexToTerm == DOLLAR){
                 return P_GREATER;
             }
-            else syntaxError(); 
+            else syntaxError(NULL); 
             break;
 
         case AS:
@@ -151,7 +151,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             else if(lexToTerm == RPAR || lexToTerm == DOLLAR){
                 return P_GREATER;
             }
-            else syntaxError();
+            else syntaxError(NULL);
             break;
 
         case EQ: case NEQ:
@@ -165,7 +165,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             || lexToTerm == DOLLAR){
                 return P_GREATER;
             }
-            else syntaxError();
+            else syntaxError(NULL);
             break;
 
         case GEQ: case LEQ: case G: case L:
@@ -177,7 +177,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             || lexToTerm == LEQ || lexToTerm == L || lexToTerm == G || lexToTerm == RPAR){
                 return P_GREATER;
             }
-            else syntaxError();
+            else syntaxError(NULL);
             break;
 
         case LPAR:
@@ -190,7 +190,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             else if(lexToTerm == RPAR){
                 return P_EQ;
             }
-            else syntaxError();  
+            else syntaxError(NULL);  
             break;
         case RPAR:
             if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV
@@ -199,7 +199,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             || lexToTerm == RPAR || lexToTerm == DOLLAR){
                 return P_GREATER;
             }      
-            else syntaxError();
+            else syntaxError(NULL);
             break;
     }
 
@@ -220,7 +220,7 @@ expressionRule precParseCheckRule(stackElement* elem1, stackElement* elem2, stac
         if(elem1->data.etype == TERMINAL && elem1->data.terminal->tType == OP){
             return EXP_TERM;
         }
-        else syntaxError();
+        else syntaxError(NULL);
     }
     if(elem1 && elem2 && elem3){
         // rule E => (E)
@@ -248,7 +248,7 @@ bool checkIfLValue(stackElement* elem){
 
 void precParseReduction(stack* s, bool* relOpInExp){
     stackElement* handle = findHandle(s);
-    if(!handle) syntaxError();
+    if(!handle) syntaxError(NULL);
     stackElement* iter = handle;
     int count = -1;
     while(iter){
@@ -294,7 +294,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
                     break;    
             }            
         }
-        else syntaxError();
+        else syntaxError(NULL);
     }
    
     else if(count == 3){
@@ -304,7 +304,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
             
             if(handle->prev->prev->data.terminal->tType == AS){
                 if(!checkIfLValue(handle->prev)){
-                    syntaxError();
+                    syntaxError(NULL);
                 }
                 else{
                     // put variable in symtable TODO
@@ -332,7 +332,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
             stackPushNonterminal(s, exp);
         }
     }   
-    else syntaxError();      
+    else syntaxError(NULL);      
 }
 
 Nonterminal* createIntLiteralNonterminal(int value){
@@ -432,8 +432,8 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
     stackElement* top;
     while(1){
         token = tokListGetValue(tl);
-        if(!token) syntaxError();
-        if(((compareLexTypes(token, PAR_R) || compareLexTypes(token, SEMICOLON)) && parCount == 0)){
+        if(!token) syntaxError(token);
+        if(((compareLexTypes(token, PAR_R) || compareLexTypes(token, SEMICOLON) || compareLexTypes(token, COMMA)) && parCount == 0)){
             if(containsOnlyTopNonterm(&s) || stackIsEmpty(&s)){
                 break;
             }
@@ -446,12 +446,47 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
         }
 
         top = getTopTerminal(&s);
-        if(isRelOperator(lexEnumToTerminalEnum(token->lex)) && relOpInExp) syntaxError();
+        if(isRelOperator(lexEnumToTerminalEnum(token->lex)) && relOpInExp) syntaxError(token);
         opPrecedence prec = getPrecedence(top->data.terminal->tType, token->lex);
         if(prec == P_LESS){
             stackInsertHandle(&s);
             // TODO
             if(token->lex == FUN_ID){
+
+                Token *nextToken = getNextToken(tl); // name of the function
+                funcall *funCall =  malloc(sizeof(funcall));
+                funCall->funId = token->string;
+                funCall->args = malloc(sizeof(nontermList));
+                nontermListInit(funCall->args);
+
+                nextToken = getNextToken(tl);       // should be '('
+                          
+                Nonterminal *nonTerm;
+                
+                // there has to be a '(' while calling a function
+                if(nextToken->lex != PAR_L) {
+                  syntaxError(nextToken);
+                }
+
+                while(nextToken->lex != PAR_R) {
+
+                    //unclosed function call
+                    if(nextToken->lex == END) {
+                      syntaxError(nextToken);
+                    }
+                  fprintf(stderr, "tl.active is: %d\n", tl->active->data->lex);
+                  if(precParser(tl, &nonTerm)) {
+                    nontermListAppend(funCall->args, nonTerm);
+                    nextToken = tokListGetValue(tl);
+    
+                    nextToken = getNextToken(tl);
+                    fprintf(stderr, "next token is: %d\n", nextToken->lex);
+                  } else {
+                    syntaxError(nextToken);
+                  }
+                }
+                //recursively syntax check args, ',' (probably)
+                //check for rpar
                 stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
             }
             else if(token->lex == STRING_LIT || token->lex == INT_LIT || token->lex == FLOAT_LIT){
@@ -482,7 +517,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
             getNextToken(tl);
         }
     }
-    if(containsOnlyTopNonterm(&s) && token->lex == PAR_R){
+    if(containsOnlyTopNonterm(&s) && (token->lex == PAR_R || token->lex == COMMA)){
         result = true;
     }
     if((containsOnlyTopNonterm(&s) || stackIsEmpty(&s)) && token->lex == SEMICOLON){
@@ -523,8 +558,12 @@ bool isKeyword(Token* t){
     return false;
 }
 
-void syntaxError(){
-    fprintf(stderr, "Syntax error, exiting...\n");
+void syntaxError(Token* errorToken){
+  if(!errorToken) {
+    fprintf(stderr, "hahaha jejda");
+    exit(2);
+  }
+    fprintf(stderr, "Syntax error, exiting...%d\n", errorToken->lex);
     exit(2);
 }
 

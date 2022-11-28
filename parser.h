@@ -28,7 +28,7 @@ bool parse_file(FILE* file);
 bool isKeyword(Token* t);
 
 void semanticError(int code);
-void syntaxError();
+void syntaxError(Token* errorToken);
 
 terminalType lexEnumToTerminalEnum(Lex lex);
 
