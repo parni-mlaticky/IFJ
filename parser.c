@@ -325,6 +325,12 @@ void precParseReduction(stack* s, bool* relOpInExp){
             stackPushNonterminal(s, nonterm);
             free(op);
         }
+        else if(precParseCheckRule(handle->prev, handle->prev->prev, handle->prev->prev->prev) == EXP_PAR){
+            Nonterminal* exp = malloc(sizeof(Nonterminal));
+            memcpy(exp, handle->prev->prev->data.nonterminal, sizeof(Nonterminal));
+            stackMultiPop(s, count+1);
+            stackPushNonterminal(s, exp);
+        }
     }   
     else syntaxError();      
 }
