@@ -730,6 +730,7 @@ bool STExpansion(tokList* tl){
         //processPossibleVariableDefinition(expTree);
         t = getNextToken(tl);
         St = St && compareLexTypes(t, SEMICOLON);
+        generateExpressionCode(expTree, false);
     }
     else if(compareLexTypes(t, FUN_ID)){
         if(compareTerminalStrings(t, "function")) St = functionDefStExpansion(tl);
@@ -749,6 +750,7 @@ bool STExpansion(tokList* tl){
         St = precParser(tl, &expTree);
         t = getNextToken(tl);
         St = St && compareLexTypes(t, SEMICOLON);
+        generateExpressionCode(expTree, false);
     }    
     return St;
 }
