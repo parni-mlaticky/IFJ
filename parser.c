@@ -468,6 +468,8 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
                   syntaxError(nextToken);
                 }
 
+                nextToken = tokListGetValue(tl);       // should be '('
+
                 while(nextToken->lex != PAR_R) {
 
                     //unclosed function call

@@ -1,3 +1,3 @@
 <?php declare(strict_types = 1);
-funkce(($bar), $foo);
+funkce(funknce($bar, $forff, 1+1), $foo);
 ?>
