@@ -28,7 +28,7 @@ bool parse_file(FILE* file);
 bool isKeyword(Token* t);
 
 void semanticError(int code);
-void syntaxError();
+void syntaxError(Token* errorToken);
 
 terminalType lexEnumToTerminalEnum(Lex lex);
 
@@ -72,7 +72,6 @@ bool paramsExpansion(tokList* tl);
 bool paramListExpansion(tokList* tl);
 
 bool typeExpansion(tokList* tl);
-
 
 bool typeNameExpansion(tokList* tl, bool questionMark);
 bool blockExpansion(tokList* tl);
