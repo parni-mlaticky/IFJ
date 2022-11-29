@@ -25,13 +25,6 @@ typedef enum terminalType{
     CAT
 } terminalType;
 
-typedef enum NonterminalType{
-    LITERAL_TERM,
-    VAR_ID_TERM,
-    FUNCALL_TERM,
-    EXPR
-} NonterminalType;
-
 typedef enum dataType{
     INT,
     FLOAT,

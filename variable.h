@@ -7,3 +7,5 @@ typedef struct variable{
     dataType dType;
     bool nullable;
 } variable;
+
+variable* variable_clone(variable* var);

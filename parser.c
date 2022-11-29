@@ -1,5 +1,10 @@
 #include <stdlib.h>
 #include "parser.h"
+#include "hashtable.h"
+#include "misc.h"
+#include "variable.h"
+
+static ht_table_t symtable;
 
 const char* keywords[] = { "if", "else", "declare", "function",
                            "while", "int", "float", "void",
@@ -548,6 +553,7 @@ bool parse_file(FILE* file) {
         tokListAppend(list, new);
     } while (token.lex != END);
     debug_print_tokens(list);
+    ht_init(&symtable);
     return recursiveDescent(list);
 }
 
@@ -692,12 +698,36 @@ bool blockSTExpansion(tokList* tl){
     return blockSt;
 }
 
+void processPossibleVariableDefinition(Nonterminal* expTree) {
+    // Check if this is really is an assignment of a variable.
+    if (expTree == NULL)                           return;
+    if (expTree->NTType != EXPR)                   return;
+    if (expTree->expr.op != AS)                    return;
+    if (expTree->expr.left == NULL)                return;
+    if (expTree->expr.left->NTType != VAR_ID_TERM) return;
+    // Variable assignment found
+    Nonterminal* var = expTree->expr.left;
+
+    // Check if variable was already added into the table
+    symtableElem* elem = ht_get(&symtable, var->term.var->name);
+    if (elem == NULL) {
+        elem = malloc(sizeof(symtableElem));
+        elem->type = VARIABLE;
+        elem->v    = variable_clone(var->term.var);
+        ht_insert(&symtable, var->term.var->name, elem);
+    }
+    else {
+        elem->v->dType = var->dType;
+    }
+}
+
 bool STExpansion(tokList* tl){
     bool St = false;
     Token* t = tokListGetValue(tl);
     if(compareLexTypes(t, VAR_ID)){
         Nonterminal* expTree;
         St = precParser(tl, &expTree);
+        //processPossibleVariableDefinition(expTree);
         t = getNextToken(tl);
         St = St && compareLexTypes(t, SEMICOLON);
     }
@@ -907,7 +937,10 @@ void debugPrintExprTree(Nonterminal* root){
             case MINUS:
                 fprintf(stderr, "\t-\t");
                 break;
-            default: break;       
+            case AS:
+                fprintf(stderr, "\t=\t");
+                break;
+            default: break;
         }
         debugPrintExprTree(root->expr.right);
     }
