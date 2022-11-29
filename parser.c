@@ -454,10 +454,8 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
             if(token->lex == FUN_ID){
 
                 Token *nextToken = getNextToken(tl); // name of the function
-                funcall *funCall =  malloc(sizeof(funcall));
-                funCall->funId = token->string;
-                funCall->args = malloc(sizeof(nontermList));
-                nontermListInit(funCall->args);
+                nontermList* args = malloc(sizeof(nontermList));
+                nontermListInit(args);
 
                 nextToken = getNextToken(tl);       // should be '('
                           
@@ -478,7 +476,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
                     }
                   fprintf(stderr, "tl.active is: %d\n", tl->active->data->lex);
                   if(precParser(tl, &nonTerm)) {
-                    nontermListAppend(funCall->args, nonTerm);
+                    nontermListAppend(args, nonTerm);
                     nextToken = tokListGetValue(tl);
 
                     if(nextToken->lex == PAR_R) {
@@ -493,7 +491,8 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
                 }
                 //recursively syntax check args, ',' (probably)
                 //check for rpar
-                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
+                //stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
+                stackPushFuncallTerminal(&s, token, args);
             }
             else if(token->lex == STRING_LIT || token->lex == INT_LIT || token->lex == FLOAT_LIT){
                 stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);

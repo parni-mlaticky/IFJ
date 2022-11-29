@@ -14,6 +14,27 @@ bool containsOnlyTopNonterm(stack* s){
     return false;
 }
 
+void stackPushFuncallTerminal(stack* s, Token* token, nontermList* args){
+    stackElement* newElement = malloc(sizeof(stackElement));
+    Terminal* terminal = malloc(sizeof(Terminal));
+    terminal->tType = OP;
+    terminal->token = token;
+    newElement->data.terminal = terminal;
+    newElement->data.etype = TERMINAL;
+    newElement->data.terminal->funcArgs = args;
+    if(!s->top){
+        newElement->prev = NULL;
+        newElement->next = NULL;
+        s->top = newElement;
+        return;
+    }
+    newElement->next = s->top;
+    s->top->prev = newElement;
+    newElement->prev = NULL;
+    s->top = newElement;
+}
+
+
 void stackPushTerminal(stack* s, terminalType tType, Token* token){
     stackElement* newElement = malloc(sizeof(stackElement));
     Terminal* terminal = malloc(sizeof(Terminal));

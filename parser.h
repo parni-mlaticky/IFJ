@@ -73,7 +73,6 @@ bool paramListExpansion(tokList* tl);
 
 bool typeExpansion(tokList* tl);
 
-
 bool typeNameExpansion(tokList* tl, bool questionMark);
 bool blockExpansion(tokList* tl);
 

@@ -31,6 +31,8 @@ typedef struct stack{
 bool containsOnlyTopNonterm(stack* s);
 void stackInit(stack* s);
 void stackPushTerminal(stack* s, terminalType t, Token* token);
+void stackPushFuncallTerminal(stack* s, Token* token, nontermList* args);
+
 void stackPop(stack* s);
 stackElement* stackPeek(stack* s);
 void stackDispose(stack* s);
@@ -41,3 +43,4 @@ void stackPushNonterminal(stack* s, Nonterminal* nonterm);
 stackElement* findHandle(stack* s);
 void stackMultiPop(stack* s, int count);
 void reduction(stack* s);
+
