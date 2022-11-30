@@ -26,6 +26,7 @@ typedef enum terminalType{
 } terminalType;
 
 typedef enum dataType{
+    NULL_T,
     INT,
     FLOAT,
     STRING,

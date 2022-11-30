@@ -31,7 +31,9 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
                         break;
                     case STRING:
                         printf("PUSHS string@%s\n", root->term.stringLit);
-                        break;      
+                        break;
+                    case NULL_T:
+                        printf("PUSHS nil@nil\n");          
                     default: break;     
                 }
             case FUNCALL_TERM:
