@@ -27,7 +27,7 @@ typedef struct Token {
         // if lex is a variable, this will be the name of it
         char* string;
         // value of int number
-        int integer;
+        long long int integer;
         // value of double number
         double decimal;
     };

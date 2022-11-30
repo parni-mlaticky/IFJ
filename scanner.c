@@ -699,7 +699,7 @@ void debug_print_tokens(tokList* list) {
             printf("(float)\t%f", current->data->decimal);
         }
         else if (current->data->lex == INT_LIT) {
-            printf("(int)\t%d", current->data->integer);
+            printf("(int)\t%lld", current->data->integer);
         }
         printf("\n");
         current = current->next;

@@ -3,7 +3,6 @@
 #include "list.h"
 #include "variable.h"
 
-
 typedef struct{
     dataType returnType;
     varList* args;
@@ -15,12 +14,11 @@ typedef struct symtableElem{
     enum type {
         FUNCTION,
         VARIABLE
-    };
+    } type;
 
     union{
         variable* v;
         function* f;
     };
 } symtableElem;
-
 

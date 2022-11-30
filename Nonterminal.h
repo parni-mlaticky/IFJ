@@ -3,6 +3,12 @@
 #include "variable.h"
 #include "list.h"
 
+typedef enum NonterminalType{
+    LITERAL_TERM,
+    VAR_ID_TERM,
+    FUNCALL_TERM,
+    EXPR
+} NonterminalType;
 
 typedef struct Nonterminal{
     NonterminalType NTType; // Term or expression
