@@ -698,6 +698,7 @@ bool blockSTExpansion(tokList* tl){
         blockSt = precParser(tl, &expTree);
         t = getNextToken(tl);
         blockSt = blockSt && compareLexTypes(t, SEMICOLON);
+        generateExpressionCode(expTree, false);
     }
     else if(compareLexTypes(t, FUN_ID)){
         if(compareTerminalStrings(t, "if")) blockSt = ifStExpansion(tl);
@@ -709,6 +710,7 @@ bool blockSTExpansion(tokList* tl){
             blockSt = precParser(tl, &expTree);
             t = getNextToken(tl);
             blockSt = blockSt && compareLexTypes(t, SEMICOLON);
+            generateExpressionCode(expTree, false);
         }    
     }
     else if(compareLexTypes(t, INT_LIT) || compareLexTypes(t, FLOAT_LIT) || compareLexTypes(t, STRING_LIT)){
@@ -716,6 +718,7 @@ bool blockSTExpansion(tokList* tl){
         blockSt = precParser(tl, &expTree);
         t = getNextToken(tl);
         blockSt = blockSt && compareLexTypes(t, SEMICOLON);
+        generateExpressionCode(expTree, false);
     }
     return blockSt;
 }
@@ -802,6 +805,9 @@ bool functionDefStExpansion(tokList* tl){
 }
 
 bool ifStExpansion(tokList* tl){
+    static int ifCount = 0;
+    int currentIfId = ifCount;
+    ifCount++; 
     bool ifSt;
     Token* t = getNextToken(tl);
     ifSt = compareTerminalStrings(t, "if");
@@ -810,22 +816,35 @@ bool ifStExpansion(tokList* tl){
 
     Nonterminal* expTree;
     ifSt = ifSt && precParser(tl, &expTree);
+    generateExpressionCode(expTree, false);
 
-    //printf("")
+    printf("CALL %%TO_BOOL\n");
+    printf("PUSHS bool@false\n");
+    printf("JUMPIFEQS ELSE%d\n", currentIfId);
+    printf("LABEL IF%d\n", currentIfId);
 
     t = getNextToken(tl);
     ifSt = ifSt && compareLexTypes(t, PAR_R);
     ifSt = ifSt && blockExpansion(tl);
 
+    printf("JUMP IF%dEND\n", currentIfId);
+
     t = getNextToken(tl);
     ifSt = ifSt && compareLexTypes(t, FUN_ID);    
     if(!ifSt) return ifSt;
     ifSt = ifSt && compareTerminalStrings(t, "else");
-    ifSt = ifSt && blockExpansion(tl);  
+
+    printf("LABEL ELSE%d\n", currentIfId);
+
+    ifSt = ifSt && blockExpansion(tl);
+    printf("LABEL IF%dEND\n", currentIfId); 
     return ifSt;
 }
 
 bool whileStExpansion(tokList* tl){
+    static int whileCount = 0;
+    int currentWhileId = whileCount;
+    whileCount++;
     bool whileSt;
     Token* t;
 
@@ -837,8 +856,19 @@ bool whileStExpansion(tokList* tl){
     Nonterminal* expTree;
     whileSt = whileSt && precParser(tl, &expTree);
 
+    printf("LABEL WHILE%d\n", currentWhileId);
+    generateExpressionCode(expTree, false);
+    printf("CALL %%TO_BOOL\n");
+    printf("PUSHS bool@false\n");
+
+    printf("JUMPIFEQS WHILE%dEND\n", currentWhileId);
+
     t = getNextToken(tl);
     whileSt = whileSt && compareLexTypes(t, PAR_R) && blockExpansion(tl);
+
+    printf("JUMP WHILE%d\n", currentWhileId);
+    printf("LABEL WHILE%dEND\n", currentWhileId);
+
     return whileSt;
 }
 

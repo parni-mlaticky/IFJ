@@ -13,6 +13,11 @@ int main(int argc, char** argv) {
     printf("DEFVAR GF@%%RAX\n");
     printf("DEFVAR GF@%%RBX\n");
     printf("CREATEFRAME\nPUSHFRAME\n");
+    printf("JUMP %%PROG_START\n");
+    generateToBoolFunction();
+
+    printf("LABEL %%PROG_START\n");
+
     bool res = parse_file(source_file);
     if(res){
         //fprintf(stderr, "Syntax is OK\n");
