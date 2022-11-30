@@ -292,8 +292,15 @@ void precParseReduction(stack* s, bool* relOpInExp){
 
                 case FUN_ID:
                     ;
-                    Nonterminal* funcNonterm = createFuncallNonterminal(tmp->data.terminal->token->string, NULL);
-                    stackPushNonterminal(s, funcNonterm);
+                    if(compareTerminalStrings(tmp->data.terminal->token, "null")){
+                        Nonterminal* nullNonterm = createNullNonterminal();
+                        stackPushNonterminal(s, nullNonterm);
+                    }
+                    else{
+                        Nonterminal* funcNonterm = createFuncallNonterminal(tmp->data.terminal->token->string, NULL);
+                        stackPushNonterminal(s, funcNonterm);
+                    }
+      
                     break;
                 default:
                     break;    
@@ -395,6 +402,18 @@ Nonterminal* createFuncallNonterminal(char* funId, nontermList* args){
     return funcNonterm;
 }
 
+Nonterminal* createNullNonterminal(){
+    Nonterminal* nullNonterm = malloc(sizeof(Nonterminal));
+
+    nullNonterm->NTType = LITERAL_TERM;
+    nullNonterm->dType = NULL_T;
+    nullNonterm->expr.left = NULL;
+    nullNonterm->expr.right = NULL;
+    nullNonterm->expr.op = DOLLAR;
+    
+    return nullNonterm;
+}
+
 Nonterminal* createVariableNonterminal(char* varId, dataType dType){
     Nonterminal* varNonterm = malloc(sizeof(Nonterminal));
     variable* var = malloc(sizeof(variable));
@@ -457,47 +476,51 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
             stackInsertHandle(&s);
             // TODO
             if(token->lex == FUN_ID){
-
-                Token *nextToken = getNextToken(tl); // name of the function
-                nontermList* args = malloc(sizeof(nontermList));
-                nontermListInit(args);
-
-                nextToken = getNextToken(tl);       // should be '('
-                          
-                Nonterminal *nonTerm;
-                
-                // there has to be a '(' while calling a function
-                if(nextToken->lex != PAR_L) {
-                  syntaxError(nextToken, "precParser missing '(' while calling a function error");
+                if(compareTerminalStrings(token, "null")){
+                    stackPushTerminal(&s, OP, token);
                 }
+                else{
+                    Token *nextToken = getNextToken(tl); // name of the function
+                    nontermList* args = malloc(sizeof(nontermList));
+                    nontermListInit(args);
 
-                nextToken = tokListGetValue(tl);       // should be '('
-
-                while(nextToken->lex != PAR_R) {
-
-                    //unclosed function call
-                    if(nextToken->lex == END) {
-                      syntaxError(nextToken, "precParser ')' missing at the end of a function call");
+                    nextToken = getNextToken(tl);       // should be '('
+                            
+                    Nonterminal *nonTerm;
+                    
+                    // there has to be a '(' while calling a function
+                    if(nextToken->lex != PAR_L) {
+                    syntaxError(nextToken, "precParser missing '(' while calling a function error");
                     }
-                  fprintf(stderr, "tl.active is: %d\n", tl->active->data->lex);
-                  if(precParser(tl, &nonTerm)) {
-                    nontermListAppend(args, nonTerm);
-                    nextToken = tokListGetValue(tl);
 
-                    if(nextToken->lex == PAR_R) {
-                      break;
+                    nextToken = tokListGetValue(tl);       // should be '('
+
+                    while(nextToken->lex != PAR_R) {
+
+                        //unclosed function call
+                        if(nextToken->lex == END) {
+                        syntaxError(nextToken, "precParser ')' missing at the end of a function call");
+                        }
+                    fprintf(stderr, "tl.active is: %d\n", tl->active->data->lex);
+                    if(precParser(tl, &nonTerm)) {
+                        nontermListAppend(args, nonTerm);
+                        nextToken = tokListGetValue(tl);
+
+                        if(nextToken->lex == PAR_R) {
+                        break;
+                        }
+        
+                        nextToken = getNextToken(tl);
+                        fprintf(stderr, "next token is: %d\n", nextToken->lex);
+                    } else {
+                        syntaxError(nextToken, "precParser precParser returned false error");
                     }
-    
-                    nextToken = getNextToken(tl);
-                    fprintf(stderr, "next token is: %d\n", nextToken->lex);
-                  } else {
-                    syntaxError(nextToken, "precParser precParser returned false error");
-                  }
+                    }
+                    //recursively syntax check args, ',' (probably)
+                    //check for rpar
+                    //stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
+                    stackPushFuncallTerminal(&s, token, args);
                 }
-                //recursively syntax check args, ',' (probably)
-                //check for rpar
-                //stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
-                stackPushFuncallTerminal(&s, token, args);
             }
             else if(token->lex == STRING_LIT || token->lex == INT_LIT || token->lex == FLOAT_LIT){
                 stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
@@ -552,7 +575,6 @@ bool parse_file(FILE* file) {
         token = *new;
         tokListAppend(list, new);
     } while (token.lex != END);
-    debug_print_tokens(list);
     ht_init(&symtable);
     return recursiveDescent(list);
 }
@@ -788,6 +810,8 @@ bool ifStExpansion(tokList* tl){
 
     Nonterminal* expTree;
     ifSt = ifSt && precParser(tl, &expTree);
+
+    //printf("")
 
     t = getNextToken(tl);
     ifSt = ifSt && compareLexTypes(t, PAR_R);
