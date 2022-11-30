@@ -76,3 +76,53 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
         printf("%s\n", operation);
     }
 }
+
+
+void generateToBoolFunction(){
+    printf(
+        // Pops the top of the stack into RAX and checks what type it is
+        "LABEL %%TO_BOOL\n"
+        "POPS GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RAX\n"
+        "JUMPIFEQ %%BOOL GF@%%RBX string@bool\n"
+        "JUMPIFEQ %%STRING GF@%%RBX string@string\n"
+        "JUMPIFEQ %%INT GF@%%RBX string@int\n"
+        "JUMPIFEQ %%FLOAT GF@%%RBX string@float\n"
+
+        // If the type is bool, nothing needs to be converted, so just push back the original value
+        "LABEL %%BOOL\n"
+        "PUSHS GF@%%RAX\n"
+        "JUMP %%RET_BOOL\n"
+        "RETURN\n"
+
+        // If the type is string and the content is "0", push false as the return value
+        // Otherwise push true
+        "LABEL %%STRING\n"
+        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX string@0\n"
+        "PUSHS bool@true\n"
+        "JUMP %%RET_BOOL\n"
+
+        // If the type is and the content is 0, push false as the return value
+        // Otherwise push true
+        "LABEL %%INT\n"
+        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX int@0\n"
+        "PUSHS bool@true\n"
+        "JUMP %%RET_BOOL\n"
+
+        "LABEL %%FLOAT\n"
+        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX float@0x0.0p+0\n"
+        "PUSHS bool@true\n"
+        "JUMP %%RET_BOOL\n"
+
+        "LABEL %%VALUE_IS_FALSE\n"
+        "PUSHS bool@false\n"
+
+        "LABEL %%RET_BOOL\n"
+        "RETURN\n"
+        );
+}
+
+
+void convertExpResultToBoolValue(){
+    printf("CALL %%TO_BOOL\n");
+}
