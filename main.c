@@ -15,6 +15,9 @@ int main(int argc, char** argv) {
     printf("CREATEFRAME\nPUSHFRAME\n");
     printf("JUMP %%PROG_START\n");
     generateToBoolFunction();
+    generateToFloatFunction();
+    generateEnforceTypesFunction();
+    generateStackSwap();
 
     printf("LABEL %%PROG_START\n");
 

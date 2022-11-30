@@ -38,6 +38,10 @@ $(BUILD_DIR)%.o: %.c
 run: $(TARGET)
 	cat $(RUN_FILE_PATH) | ./$< $(RUN_FLAGS)
 
+int: $(TARGET)
+	cat $(RUN_FILE_PATH) | ./$< $(RUN_FLAGS) > prog.ifj && \
+	./ic22int -v prog.ifj
+
 test: $(TARGET)
 	$(TARGET) test-scripts/test.php >test.php.output
 	@printf "`tput bold`Testing test.php`tput sgr0`"

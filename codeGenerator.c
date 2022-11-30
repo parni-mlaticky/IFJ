@@ -1,5 +1,49 @@
 #include "codeGenerator.h"
 
+void generateEnforceTypesFunction() {
+    printf("LABEL %%ENFORCE_TYPES\n"
+           // Popping type string
+           "POPS GF@%%RAX\n"
+           // Popping value
+           "POPS GF@%%RBX\n"
+           "PUSHS GF@%%RBX\n"
+
+           "TYPE GF@%%RBX GF@%%RBX\n"
+           "JUMPIFEQ %%GEN_ENF_TYP-END GF@%%RAX GF@%%RBX\n"
+           "EXIT int@7\n"
+           "LABEL %%GEN_ENF_TYP-END\n"
+           "RETURN\n"
+    );
+}
+
+void generateToFloatFunction() {
+    printf("LABEL %%TRY_INT_2_FLOAT\n"
+           "POPS GF@%%RAX\n"
+           "TYPE GF@%%RBX GF@%%RAX\n"
+           "JUMPIFEQ %%TRY_INT_2_FLOAT-CONV GF@%%RBX string@int\n"
+           "JUMPIFEQ %%TRY_INT_2_FLOAT-END GF@%%RBX string@float\n"
+           "EXIT int@7\n"
+           "LABEL %%TRY_INT_2_FLOAT-CONV\n"
+           "INT2FLOAT GF@%%RAX GF@%%RAX\n"
+           "LABEL %%TRY_INT_2_FLOAT-END\n"
+           "PUSHS GF@%%RAX\n"
+           "RETURN\n"
+    );
+}
+
+void generateStackSwap() {
+    printf("LABEL %%STACK_SWAP\n"
+           "BREAK\n"
+           "POPS GF@%%RAX\n"
+           "POPS GF@%%RBX\n"
+           "PUSHS GF@%%RAX\n"
+           "PUSHS GF@%%RBX\n"
+           "BREAK\n"
+           "RETURN\n"
+    );
+}
+
+
 void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
     // NAJIT NEJPRAVJEJSI LIST
     // PUSHNOUT NA STACK 
@@ -45,38 +89,61 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
     }
     else{
         if(root->expr.op == AS){
+            // Assignments are traversed using reverse postorder.
             generateExpressionCode(root->expr.right, false);
             generateExpressionCode(root->expr.left, true);
         }
         else{
-            generateExpressionCode(root->expr.right, false);
+            // All other expressions are traversed using normal postorder.
             generateExpressionCode(root->expr.left, false);
+            generateExpressionCode(root->expr.right, false);
         }
-        char* operation; 
         switch(root->expr.op){
             case PLUS:
-                operation = "ADDS";
+                printf("ADDS\n");
                 break;
+
             case MINUS:
-                operation = "SUBS";
+                printf("SUBS\n");
                 break;
+
             case DIV:
-                operation = "POPS gf@%%rax\nPOPS gf@%%rbx\nPUSHS gf@%%rax\nPUSHS gf@%%rbx\nDIVS";
+                printf("CALL %%TRY_INT_2_FLOAT\n"
+                       "CALL %%STACK_SWAP\n"
+                       "CALL %%TRY_INT_2_FLOAT\n"
+                       "CALL %%STACK_SWAP\n"
+                       "DIVS\n");
                 break;
+
             case MUL:
-                operation = "MULS";
+                printf("MULS\n");
                 break;
+
+            case CAT:
+                printf("PUSHS string@string\n"
+                       "CALL %%ENFORCE_TYPES\n"
+                       "CALL %%STACK_SWAP\n"
+
+                       "PUSHS string@string\n"
+                       "CALL %%ENFORCE_TYPES\n"
+                       "POPS gf@%%RBX\n"
+                       "POPS gf@%%RAX\n"
+
+                       "CONCAT GF@%%RAX gf@%%RBX gf@%%RAX\n"
+                       "PUSHS gf@%%RAX\n");
+
+                break;
+
             case AS:
                 printf("DEFVAR LF@$%s\n", root->expr.left->term.var->name);
                 printf("POPS LF@$%s\n", root->expr.left->term.var->name);
                 printf("PUSHS LF@$%s\n", root->expr.left->term.var->name);
-                return;   
+                return;
+
             default: break;    
         }
-        printf("%s\n", operation);
     }
 }
-
 
 void generateToBoolFunction(){
     printf(
