@@ -669,7 +669,8 @@ Token scan_next_token(FILE *file, bool expect_prolog)
     // The state machine should ensure that int and float literals will always be valid.
     if (returnLex == INT_LIT) {
         char *temp = charListToString(&str);
-        token.integer = atoi(temp);
+        char* endptr;
+        token.integer = strtol(temp, &endptr, 10);
         free(temp);
     }
     else if (returnLex == FLOAT_LIT) {

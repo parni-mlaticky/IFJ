@@ -972,7 +972,7 @@ void debugPrintExprTree(Nonterminal* root){
                         fprintf(stderr, "%s", root->term.stringLit);
                         break;
                     case INT:
-                        fprintf(stderr, "%d", root->term.integerLit);
+                        fprintf(stderr, "%lld", root->term.integerLit);
                         break;
                     case FLOAT:
                         fprintf(stderr, "%lf", root->term.floatLit);

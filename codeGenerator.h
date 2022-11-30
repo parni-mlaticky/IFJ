@@ -4,4 +4,7 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment);
 void generateToBoolFunction();
 void generateToFloatFunction();
 void generateEnforceTypesFunction();
-void generateStackSwap();
+void generateStackSwapFunction();
+void generateNormalizeNumericTypesFunction();
+void generateNullToIntFunction();
+void generateStarterAsm();
