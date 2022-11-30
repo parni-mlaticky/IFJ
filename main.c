@@ -6,16 +6,20 @@ int main(int argc, char** argv) {
     (void) argc;
     (void) argv;
 
-    // TODO Change to stdin.
     FILE* source_file = stdin;
 
+    // TODO Create a separate function for the code that is always generated
+    printf(".IFJcode22\n");
+    printf("DEFVAR GF@%%RAX\n");
+    printf("DEFVAR GF@%%RBX\n");
+    printf("CREATEFRAME\nPUSHFRAME\n");
     bool res = parse_file(source_file);
     if(res){
-        printf("Syntax is OK\n");
+        //fprintf(stderr, "Syntax is OK\n");
         exit(0);
     } 
     else {
-        printf("Syntax error\n");
+        fprintf(stderr, "Syntax error\n");
         exit(2);
     }
 }

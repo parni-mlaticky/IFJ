@@ -9,6 +9,7 @@
 #include "precParsingEnums.h"
 #include "Nonterminal.h"
 #include "funcall.h"
+#include "codeGenerator.h"
 
 #define KEYWORD_COUNT 11
 
