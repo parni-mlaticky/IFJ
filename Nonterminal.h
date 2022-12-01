@@ -19,7 +19,7 @@ typedef struct Nonterminal{
         variable* var;
         struct funcall* func;
         char* stringLit;
-        int integerLit;
+        long long int integerLit;
         double floatLit;
     } term;
 

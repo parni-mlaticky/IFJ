@@ -669,7 +669,8 @@ Token scan_next_token(FILE *file, bool expect_prolog)
     // The state machine should ensure that int and float literals will always be valid.
     if (returnLex == INT_LIT) {
         char *temp = charListToString(&str);
-        token.integer = atoi(temp);
+        char* endptr;
+        token.integer = strtol(temp, &endptr, 10);
         free(temp);
     }
     else if (returnLex == FLOAT_LIT) {
@@ -686,23 +687,23 @@ Token scan_next_token(FILE *file, bool expect_prolog)
 }
 
 void debug_print_tokens(tokList* list) {
-    printf(">>> BEGIN TOKENS <<<\n");
-    printf("#\tLEX\tTYPE\tDATA\n");
+    fprintf(stderr, ">>> BEGIN TOKENS <<<\n");
+    fprintf(stderr, "#\tLEX\tTYPE\tDATA\n");
     int i = 0;
     tokElem* current = tokListGetFirst(list);
     while (current != NULL) {
-        printf("#%d\t%d\t", i++, current->data->lex);
+        fprintf(stderr, "#%d\t%d\t", i++, current->data->lex);
         if (current->data->string && current->data->lex != FLOAT_LIT && current->data->lex != INT_LIT) {
-            printf("(text)\t%s", current->data->string);
+            fprintf(stderr, "(text)\t%s", current->data->string);
         }
         else if (current->data->lex == FLOAT_LIT) {
-            printf("(float)\t%f", current->data->decimal);
+            fprintf(stderr, "(float)\t%f", current->data->decimal);
         }
         else if (current->data->lex == INT_LIT) {
-            printf("(int)\t%lld", current->data->integer);
+            fprintf(stderr, "(int)\t%lld", current->data->integer);
         }
-        printf("\n");
+        fprintf(stderr ,"\n");
         current = current->next;
     }
-    printf(">>> END   TOKENS <<<\n");
+    fprintf(stderr, ">>> END   TOKENS <<<\n");
 }
