@@ -57,7 +57,8 @@ void ht_insert(ht_table_t *table, char *key, symtableElem* value) {
 }
 
 symtableElem* ht_get(ht_table_t *table, char *key) {
-  return ht_search(table, key)->value;
+  ht_item_t* item = ht_search(table, key);
+  return item == NULL ? NULL : item->value;
 }
 
 void ht_delete(ht_table_t *table, char *key) {
