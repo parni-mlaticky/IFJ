@@ -58,7 +58,7 @@ bool blockSTListExpansion(tokList* tl);
 
 bool blockSTExpansion(tokList* tl);
 
-bool functionDefStExpansion(tokList* tl);
+bool functionDefStExpansion(tokList* tl, bool firstPass);
 
 bool ifStExpansion(tokList* tl);
 
@@ -66,20 +66,22 @@ bool whileStExpansion(tokList* tl);
 
 bool returnStExpansion(tokList* tl);
 
-bool varExpansion(tokList* tl);
+bool varExpansion(tokList* tl, variable* var);
 
-bool paramsExpansion(tokList* tl);
+bool paramsExpansion(tokList* tl, varList* args);
 
-bool paramListExpansion(tokList* tl);
+bool paramListExpansion(tokList* tl, varList* args);
 
-bool typeExpansion(tokList* tl);
+bool typeExpansion(tokList* tl, dataType* returnType, bool* nullable, bool isReturnType);
 
-bool typeNameExpansion(tokList* tl, bool questionMark);
+bool typeNameExpansion(tokList* tl, bool questionMark, dataType* returnType, bool isReturnType);
 bool blockExpansion(tokList* tl);
 
 bool isRelOperator(terminalType tType);
 
 void debugPrintExprTree(Nonterminal* root);
+
+void terminalToDataType(Token* t, dataType* type);
 
 bool precParser(tokList* tl, Nonterminal** finalNonterm);
 
