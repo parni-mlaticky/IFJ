@@ -7,11 +7,12 @@ void generateStarterAsm() {
     printf("CREATEFRAME\nPUSHFRAME\n");
     printf("JUMP %%PROG_START\n");
     generateToBoolFunction();
-    generateToFloatFunction();
+    //generateToFloatFunction();
     generateEnforceTypesFunction();
     generateStackSwapFunction();
     generateNormalizeNumericTypesFunction();
     generateNullToIntFunction();
+    generateBuiltInFunctions();
     printf("LABEL %%PROG_START\n");
 }
 
@@ -36,25 +37,6 @@ void generateEnforceTypesFunction() {
     );
 }
 
-/**
- * Expects a variable of an unknown type on the stack.
- * Pops all arguments.
- * Returns on the stack the float representation of the variable or exits.
- */
-void generateToFloatFunction() {
-    printf("LABEL %%TRY_INT_2_FLOAT\n"
-           "POPS GF@%%RAX\n"
-           "TYPE GF@%%RBX GF@%%RAX\n"
-           "JUMPIFEQ %%TRY_INT_2_FLOAT-CONV GF@%%RBX string@int\n"
-           "JUMPIFEQ %%TRY_INT_2_FLOAT-END GF@%%RBX string@float\n"
-           "EXIT int@7\n"
-           "LABEL %%TRY_INT_2_FLOAT-CONV\n"
-           "INT2FLOAT GF@%%RAX GF@%%RAX\n"
-           "LABEL %%TRY_INT_2_FLOAT-END\n"
-           "PUSHS GF@%%RAX\n"
-           "RETURN\n"
-    );
-}
 
 void generateNullToIntFunction() {
     printf("LABEL %%NULL_TO_INT\n"
@@ -311,3 +293,226 @@ void generateToBoolFunction(){
 void convertExpResultToBoolValue(){
     printf("CALL %%TO_BOOL\n");
 }
+
+
+void generateBuiltInFunctions(){
+    // reads() READ STRING
+    printf(
+        "LABEL %%READS\n"
+        "READ GF@%%RAX string\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
+        );
+
+    // readi() READ INT    
+    printf(
+        "LABEL %%READI\n"
+        "READ GF@%%RAX int\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
+        );
+    // readf() READ FLOAT    
+    printf(
+        "LABEL %%READF\n"
+        "READ GF@%%RAX float\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
+        );
+
+    // write()    
+    printf(
+        // Since this function can have any number of arguments,
+        // the number of arguments will be pushed together with the arguments themselves
+        "LABEL %%WRITE\n"
+
+        // Pop the number of args into RAX
+        "POPS GF@%%RAX\n"
+
+        // pop the argument into RBX, write, RAX-- , loop
+        "LABEL %%WRITE_LOOP\n"
+        "JUMPIFEQ %%WRITE_RETURN GF@%%RAX int@0\n"
+        "POPS GF@%%RBX\n"
+        "WRITE GF@%%RBX\n"
+        "SUB GF@%%RAX GF@%%RAX int@1\n"
+        "JUMP %%WRITE_LOOP\n"
+
+        "LABEL %%WRITE_RETURN\n"
+        "RETURN\n"
+    );
+
+    // floatval()
+    printf(
+        "LABEL %%FLOATVAL\n"
+        "POPS GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RAX\n"
+
+        "JUMPIFEQ %%FLOATVAL_INT GF@%%RBX string@int\n"
+        "JUMPIFEQ %%FLOATVAL_END GF@%%RBX string@float\n"
+        "JUMPIFEQ %%FLOATVAL_NULL GF@%%RBX string@nil\n"
+
+        "EXIT int@7\n"
+        "LABEL %%FLOATVAL_NULL\n"
+        "MOVE GF@%%RAX float@0x0.0p+0\n"
+        "JUMP %%FLOATVAL_END\n"
+
+        "LABEL %%FLOATVAL_INT\n"
+        "INT2FLOAT GF@%%RAX GF@%%RAX\n"
+
+        "LABEL %%FLOATVAL_END\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
+    );
+
+    // intval()
+    printf(
+        "LABEL %%INTVAL\n"
+        "POPS GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RAX\n"
+
+        "JUMPIFEQ %%INTVAL_END GF@%%RBX string@int\n"
+        "JUMPIFEQ %%INTVAL_FLOAT GF@%%RBX string@float\n"
+        "JUMPIFEQ %%INTVAL_NULL GF@%%RBX string@nil\n"
+
+        "EXIT int@7\n"
+        "LABEL %%INTVAL_NULL\n"
+        "MOVE GF@%%RAX int@0\n"
+        "JUMP %%INTVAL_END\n"
+
+        "LABEL %%INTVAL_FLOAT\n"
+        "FLOAT2INT GF@%%RAX GF@%%RAX\n"
+
+        "LABEL %%INTVAL_END\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
+    );
+
+    // strval()
+    printf(
+        "LABEL %%STRVAL\n"
+        "POPS GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RAX\n"
+
+        "JUMPIFEQ %%STRVAL_END GF@%%RBX string@string\n"
+        "JUMPIFEQ %%STRVAL_NULL GF@%%RBX string@nil\n"
+
+        "EXIT int@7\n"
+
+        "LABEL %%STRVAL_NULL\n"
+        "MOVE GF@%%RAX string@\n"
+
+        "LABEL %%STRVAL_END\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
+    );
+
+    // strlen()
+    printf(
+        "LABEL %%STRLEN\n"
+        "POPS GF@%%RAX\n"
+        "STRLEN GF@%%RAX GF@%%RAX\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
+    );
+
+    // TODO create frames for these builtin functions
+
+    // substring()
+    printf(
+        // Define local vars
+        "DEFVAR LF@$i\n"
+        "DEFVAR LF@$j\n"
+        "DEFVAR LF@$s\n"
+
+        // Pop args from stack
+        "POPS LF@$s\n"
+        "POPS LF@$i\n"
+        "POPS LF@$j\n"
+
+        // check if $i < 0
+        "LT GF@%%RBX LF@$i int@0\n"
+        "JUMPIFEQ %%SUBSTR_ERROR GF@%%RBX bool@true\n"
+
+        // check if $j < 0
+        "LT GF@%%RBX LF@$j int@0\n"
+        "JUMPIFEQ %%SUBSTR_ERROR GF@%%RBX bool@true\n"
+
+        // check if $i > $j
+        "GT GF@%%RBX LF@$i LF@$j\n"
+        "JUMPIFEQ %%SUBSTR_ERROR GF@%%RBX bool@true\n"
+
+        //check if $i >= strlen($s)
+        "STRLEN GF@%%RAX LF@$s\n"
+        "PUSHS LF@$i\n"
+        "PUSHS GF@%%RAX\n"
+        "GTS\n"
+        "PUSHS LF@$i\n"
+        "PUSHS GF@%%RAX\n"
+        "EQS\n"
+        "ANDS\n"
+        "PUSHS bool@true\n"
+        "JUMPIFEQS %%SUBSTR_ERROR\n"
+
+        // check if $j > strlen($s)
+        "PUSHS LF@$j\n"
+        "PUSHS GF@%%RAX\n"
+        "GTS\n"
+        "PUSHS bool@true\n"
+        "JUMPIFEQS %%SUBSTR_ERROR\n"
+
+
+        // move empty string to RAX
+        "MOVE GF@%%RAX string@\n"
+
+        // getchar and concat until $i = $j
+        "LABEL %%SUBSTR_LOOP\n"
+        "PUSHS LF@$i\n"
+        "PUSHS LF@$j\n"
+        "JUMPIFEQS %%SUBSTR_LOOP_END\n"
+        "GETCHAR GF@%%RBX LF@$s LF@$i\n"
+        "CONCAT GF@%%RAX GF@%%RAX GF@%%RBX\n"
+        "ADD LF@$i LF@$i int@1\n"
+        "JUMP %%SUBSTR_LOOP\n"        
+
+        // push result and return
+        "LABEL %%SUBSTR_LOOP_END\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
+
+        // return null if error
+        "LABEL %%SUBSTR_ERROR\n"
+        "PUSHS nil@nil\n"
+        "RETURN\n"
+
+    );
+
+    // ord()
+    printf(
+        "LABEL %%ORD\n"
+        "POPS GF@%%RBX\n"
+
+        "STRLEN GF@%%RAX GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
+        "PUSHS int@0\n"
+        "JUMPIFEQS %%ORD_EMPTY\n"
+
+        "STRI2INT GF@%%RAX GF@%%RBX int@0\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
+
+        "LABEL %%ORD_EMPTY\n"
+        "PUSHS int@0\n"
+        "RETURN\n"
+    );
+
+    // chr()
+
+    printf(
+        "LABEL %%CHR\n"
+        "POPS GF@%%RBX\n"
+
+        "INT2CHAR GF@%%RAX GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
+    );    
+}
+

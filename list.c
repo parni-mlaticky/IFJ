@@ -18,6 +18,7 @@
         TYPE_NAME##Elem* new = malloc(sizeof(TYPE_NAME##Elem));                 \
         new->data = data;                                                       \
         new->next = NULL;                                                       \
+        new->prev = list->last;                                                 \
         if(!list->len){                                                         \
             list->first = new;                                                  \
             list->last = new;                                                   \
@@ -45,11 +46,20 @@
     void TYPE_NAME##ListFirst(TYPE_NAME##List* list){                           \
         list->active = list->first;                                             \
     }                                                                           \
+    void TYPE_NAME##ListLast(TYPE_NAME##List* list){                            \
+        list->active = list->last;                                              \
+    }                                                                           \
     void TYPE_NAME##ListNext(TYPE_NAME##List* list){                            \
         if(!list->active){                                                      \
             return;                                                             \
         }                                                                       \
         list->active = list->active->next;                                      \
+    }                                                                           \
+    void TYPE_NAME##ListPrev(TYPE_NAME##List* list){                            \
+        if(!list->active){                                                      \
+            return;                                                             \
+        }                                                                       \
+        list->active = list->active->prev;                                      \
     }                                                                           \
     TYPE TYPE_NAME##ListGetValue(TYPE_NAME##List* list){                        \
         return list->active->data;                                              \

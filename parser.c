@@ -501,7 +501,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
                         if(nextToken->lex == END) {
                         syntaxError(nextToken, "precParser ')' missing at the end of a function call");
                         }
-                    fprintf(stderr, "tl.active is: %d\n", tl->active->data->lex);
+                    //fprintf(stderr, "tl.active is: %d\n", tl->active->data->lex);
                     if(precParser(tl, &nonTerm)) {
                         nontermListAppend(args, nonTerm);
                         nextToken = tokListGetValue(tl);
@@ -511,7 +511,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
                         }
         
                         nextToken = getNextToken(tl);
-                        fprintf(stderr, "next token is: %d\n", nextToken->lex);
+                        //fprintf(stderr, "next token is: %d\n", nextToken->lex);
                     } else {
                         syntaxError(nextToken, "precParser precParser returned false error");
                     }
@@ -811,7 +811,7 @@ bool functionDefStExpansion(tokList* tl, bool firstPass){
     fDefSt = compareTerminalStrings(t, "function");
     t = getNextToken(tl);
     fDefSt = fDefSt && compareLexTypes(t, FUN_ID) && !isKeyword(t);
-    fprintf(stderr, "EXPANDING FUNCTION WITH NAME: %s\n", t->string);
+    // fprintf(stderr, "EXPANDING FUNCTION WITH NAME: %s\n", t->string);
     funkce->functionName = t->string;
     t = getNextToken(tl);
     fDefSt = fDefSt && compareLexTypes(t, PAR_L);
@@ -910,7 +910,7 @@ bool returnStExpansion(tokList* tl){
 
 bool varExpansion(tokList* tl, variable* var){
     Token* t = getNextToken(tl);
-    fprintf(stderr, "EXPANDING VARIABLE WITH NAME: %s\n", t->string);
+    //fprintf(stderr, "EXPANDING VARIABLE WITH NAME: %s\n", t->string);
     var->name = t->string;
     return compareLexTypes(t, VAR_ID);
 }
@@ -929,7 +929,7 @@ bool paramsExpansion(tokList* tl, varList* args){
         params = typeExpansion(tl, &var->dType, &var->nullable, false);
         //other var info
         params = params && varExpansion(tl, var) && paramListExpansion(tl, args);
-        fprintf(stderr, "APPENDING VARIABLE TO ARGS WITH NAME: %s\n", var->name);
+        //fprintf(stderr, "APPENDING VARIABLE TO ARGS WITH NAME: %s\n", var->name);
         varListAppend(args, *var);
     }
     return params;
@@ -946,7 +946,7 @@ bool paramListExpansion(tokList* tl, varList* args){
         //dataType variableType;
         t = getNextToken(tl);
         paramList = compareLexTypes(t, COMMA) && typeExpansion(tl, &var->dType, &var->nullable, false) && varExpansion(tl, var) && paramListExpansion(tl, args);
-        fprintf(stderr, "APPENDING VARIABLE TO ARGS WITH NAME: %s\n", var->name);
+        //fprintf(stderr, "APPENDING VARIABLE TO ARGS WITH NAME: %s\n", var->name);
         varListAppend(args, *var);
     }
     return paramList;
@@ -986,7 +986,7 @@ bool typeNameExpansion(tokList* tl, bool questionMark, dataType* returnType, boo
 }
 
 void terminalToDataType(Token* t, dataType* type) {
-  fprintf(stderr, "SETTING DATATYPE OF TOKEN TO %s\n", t->string);
+  // fprintf(stderr, "SETTING DATATYPE OF TOKEN TO %s\n", t->string);
   if(compareTerminalStrings(t, "int"))    {*type = INT; return;}
   if(compareTerminalStrings(t, "float"))  {*type = FLOAT; return;}
   //FIXME:
