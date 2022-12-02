@@ -792,6 +792,7 @@ bool endTokenExpansion(tokList* tl){
 
 bool functionDefStExpansion(tokList* tl, bool firstPass){
   //TODO: INIT symtable (function types), gather function info, insert it into symtab
+    (void) firstPass;
     symtableElem* functionElem = malloc(sizeof(symtableElem));
     functionElem->type = FUNCTION;
     
