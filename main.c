@@ -4,9 +4,6 @@
 
 int main() {
     FILE* source_file = stdin;
-
-    generateStarterAsm();
-
     bool res = parse_file(source_file);
     if(res){
         //fprintf(stderr, "Syntax is OK\n");

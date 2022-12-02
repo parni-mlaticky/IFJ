@@ -339,17 +339,7 @@ void convertExpResultToBoolValue(){
     printf("CALL %%TO_BOOL\n");
 }
 
-void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
-    // NAJIT NEJPRAVJEJSI LIST
-    // PUSHNOUT NA STACK 
-    // JIT NAHORU A DOLEVA
-    // PUSHNOUT NA STACK
-    // JIT NAHORU
-    // ZJISTIT OPERATOR
-    // CASE PRO VYBER OPERACE
-    // PUSHNOUT TEMP NA ULOZENI VYSLEDKU
-    // 
-    // PROFIT???
+void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment, ht_table_t* symtable){
     if(!root){
         return;
     }
@@ -357,7 +347,7 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
         switch(root->NTType){
             case VAR_ID_TERM:
                 if(!isLeftSideOfAssignment){
-                    printf("PUSHS LF@$%s\n", root->term.var->name);
+                    printf("PUSHS LF@%s\n", root->term.var->name);
                 }
                 break;
             case LITERAL_TERM:
@@ -372,11 +362,29 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
                         printf("PUSHS string@%s\n", root->term.stringLit);
                         break;
                     case NULL_T:
-                        printf("PUSHS nil@nil\n");          
+                        printf("PUSHS nil@nil\n");  
+                        break;        
                     default: break;     
                 }
+                break;
             case FUNCALL_TERM:
-                //TODO :omegaxd:
+                // generate semantic check of params
+                // evaluate all args right to left
+                // create frame
+                // call function
+                // check what it returned
+                // clean up??
+                // profit??
+                ;
+                symtableElem* func = ht_get(symtable, root->term.func->funId);
+                if(!func) semanticError(3);
+                nontermListLast(root->term.func->args);
+                Nonterminal* nt;
+                for(int i = 0; i < root->term.func->args->len; i++){
+                    nt = nontermListGetValue(root->term.func->args);
+                    generateExpressionCode(nt, false, symtable);
+                    nontermListPrev(root->term.func->args);
+                }
                 break;
             default: break;    
         }
@@ -385,13 +393,13 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
     else{
         if(root->expr.op == AS){
             // Assignments are traversed using reverse postorder.
-            generateExpressionCode(root->expr.right, false);
-            generateExpressionCode(root->expr.left, true);
+            generateExpressionCode(root->expr.right, false, symtable);
+            generateExpressionCode(root->expr.left, true, symtable);
         }
         else{
             // All other expressions are traversed using normal postorder.
-            generateExpressionCode(root->expr.left, false);
-            generateExpressionCode(root->expr.right, false);
+            generateExpressionCode(root->expr.left, false, symtable);
+            generateExpressionCode(root->expr.right, false, symtable);
         }
         switch(root->expr.op){
             case PLUS:
@@ -461,9 +469,8 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
                 break;
 
             case AS:
-                printf("DEFVAR LF@$%s\n", root->expr.left->term.var->name);
-                printf("POPS LF@$%s\n", root->expr.left->term.var->name);
-                printf("PUSHS LF@$%s\n", root->expr.left->term.var->name);
+                printf("POPS LF@%s\n", root->expr.left->term.var->name);
+                printf("PUSHS LF@%s\n", root->expr.left->term.var->name);
                 return;
 
             default: break;    

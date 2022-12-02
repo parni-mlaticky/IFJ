@@ -8,8 +8,8 @@
 #define IAL_HASHTABLE_H
 
 #include <stdbool.h>
-#include "symtableTypes.h"
-
+#include "variable.h"
+#include "list.h"
 /*
  * Maximálna veľkosť poľa pre implementáciu tabuľky.
  * Funkcie pracujúce s tabuľkou uvažujú veľkosť HT_SIZE.
@@ -23,15 +23,33 @@
  */
 extern int HT_SIZE;
 
-// Prvok tabuľky
 typedef struct ht_item {
   char* key;            // kľúč prvku
-  symtableElem* value;          // hodnota prvku
+  struct symtableElem* value;          // hodnota prvku
   struct ht_item *next; // ukazateľ na ďalšie synonymum
 } ht_item_t;
 
-// Tabuľka o reálnej veľkosti MAX_HT_SIZE
+
 typedef ht_item_t* ht_table_t[MAX_HT_SIZE];
+typedef struct {
+  char* functionName;
+    dataType returnType;
+    bool nullable;
+    varList* args;
+    ht_table_t* localTable;
+} function;
+
+typedef struct symtableElem{
+    enum type {
+        FUNCTION,
+        VARIABLE
+    } type;
+
+    union{
+        variable* v;
+        function* f;
+    };
+} symtableElem;
 
 int get_hash(char* key);
 void ht_init(ht_table_t* table);

@@ -1,14 +1,29 @@
-#include <stdlib.h>
 #include "parser.h"
-#include "hashtable.h"
-#include "misc.h"
-#include "variable.h"
 
 static ht_table_t symtable;
 
 const char* keywords[] = { "if", "else", "declare", "function",
                            "while", "int", "float", "void",
                            "string", "null", "return"};
+
+
+bool firstPass(tokList* tl){
+    bool fPass = true;
+    tokListFirst(tl);
+    Token* t = tokListGetValue(tl);
+    while(!compareLexTypes(t, END) && !compareLexTypes(t, SCRIPT_STOP)){
+        while(!compareLexTypes(t, FUN_ID) || !compareTerminalStrings(t, "function")){
+            if(compareLexTypes(t, END) || compareLexTypes(t, SCRIPT_STOP)) break;
+            t = getNextToken(tl);
+        }
+        if(compareLexTypes(t, END) || compareLexTypes(t, SCRIPT_STOP)) break;
+        tokListPrev(tl);
+        fPass = functionDefStExpansion(tl, true);
+        t = getNextToken(tl);
+    }    
+    return fPass;
+}
+
 
 terminalType lexEnumToTerminalEnum(Lex lex){
     switch(lex){
@@ -46,51 +61,6 @@ terminalType lexEnumToTerminalEnum(Lex lex){
             return DOLLAR;                                
     }
 }
-
-
-
-/* dataType dataTypeCompatibilityCheckOrConversion(Nonterminal* nt1, stackElement* operator, Nonterminal* nt2){
-    // In this case it is not an operator but a nonterminal with parentheses around it - (E)
-    if(operator->data.etype == NONTERMINAL){
-        return operator->data.nonterminal.;
-    }
-
-    switch(operator->data.tType){
-        case PLUS: case MINUS: case MUL:
-            if(nt1->dType == INT && nt2->dType == INT)
-                return INT;
-            if((nt1->dType == FLOAT || nt2->dType == FLOAT) && (nt1->dType == INT || nt2->dType == INT))
-                return FLOAT;
-            if(nt1->dType == UNKNOWN || nt2->dType == UNKNOWN)
-                return UNKNOWN;    
-            else semanticError(7); 
-        break;
-        case DIV:
-            if((nt1->dType == INT || nt1->dType == FLOAT) && (nt2->dType == INT || nt2->dType == FLOAT)){
-                return FLOAT;
-            }
-            else semanticError(7);
-        break;
-
-        case CAT:
-            if(nt1->dType == STRING && nt2->dType == STRING){
-                return STRING;
-            }
-            else semanticError(7);
-        break;    
-        case AS:
-            return nt2->dType;
-
-        // WE WILL NEED TO IMPLEMENT ANOTHER TYPE (BOOL) FOR THESE (i guess)
-        case EQ: case GEQ: case LEQ: case NEQ: case L: case G:
-            if((nt1->dType == FLOAT || nt1->dType == INT) && (nt2->dType == FLOAT || nt2->dType == INT)) return INT;
-            if(nt1->dType == STRING && nt2->dType == STRING) return INT;     
-            else semanticError(7);   
-        break;    
-        default: exit(99);
-    }
-    exit(99);
-} */
 
 // Implementation of the precedence table
 opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
@@ -566,6 +536,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
 }
 
 bool parse_file(FILE* file) {
+    bool result = false;
     tokList* list = malloc(sizeof(tokList));
     tokListInit(list);
     Token token;
@@ -577,7 +548,11 @@ bool parse_file(FILE* file) {
     } while (token.lex != END);
     debug_print_tokens(list);
     ht_init(&symtable);
-    return recursiveDescent(list);
+    generateStarterAsm();
+    result = firstPass(list);
+    printf("LABEL %%PROG_START\n");
+    tokListFirst(list);
+    return result && recursiveDescent(list);
 }
 
 
@@ -600,12 +575,6 @@ void syntaxError(Token* errorToken, char* errMessage){
     fprintf(stderr, "Syntax error, exiting with error message:\n%s with token: %d\n",errMessage, errorToken->lex);
     exit(2);
 }
-
-void semanticError(int code){
-    fprintf(stderr, "Semantic error code %d, exiting...\n", code);
-    exit(code);
-}
-
 
 Token* getNextToken(tokList* tl){
     Token* t = tl->active ? tokListGetValue(tl) : NULL;
@@ -681,66 +650,79 @@ bool STListExpansion(tokList* tl){
     return STList;
 }
 
-bool blockSTListExpansion(tokList* tl){
+bool blockSTListExpansion(tokList* tl, function* func){
     bool blockSTList = false;
     Token* t = tokListGetValue(tl);
     if(compareLexTypes(t, END)) blockSTList = true;
     else if(compareLexTypes(t, SCRIPT_STOP)) blockSTList = true;
     else if(compareLexTypes(t, CBR_R)) blockSTList = true;
-    else blockSTList = blockSTExpansion(tl) && blockSTListExpansion(tl);
+    else blockSTList = blockSTExpansion(tl, func) && blockSTListExpansion(tl, func);
     return blockSTList;
 }
 
-bool blockSTExpansion(tokList* tl){
+bool blockSTExpansion(tokList* tl, function* func){
     bool blockSt = false;
+    ht_table_t* localSymtable = &symtable;
+    if(func){
+        localSymtable = func->localTable;
+    }
+
+
     Token* t = tokListGetValue(tl);
     if(compareLexTypes(t, VAR_ID)){
         Nonterminal* expTree;
         blockSt = precParser(tl, &expTree);
+
+        processPossibleVariableDefinition(expTree, localSymtable);
+
         t = getNextToken(tl);
         blockSt = blockSt && compareLexTypes(t, SEMICOLON);
-        generateExpressionCode(expTree, false);
+        generateExpressionCode(expTree, false, &symtable);
     }
     else if(compareLexTypes(t, FUN_ID)){
-        if(compareTerminalStrings(t, "if")) blockSt = ifStExpansion(tl);
-        else if(compareTerminalStrings(t, "while")) blockSt = whileStExpansion(tl);
-        else if(compareTerminalStrings(t, "return")) blockSt = returnStExpansion(tl);
+        if(compareTerminalStrings(t, "if")) blockSt = ifStExpansion(tl, func);
+        else if(compareTerminalStrings(t, "while")) blockSt = whileStExpansion(tl, func);
+        else if(compareTerminalStrings(t, "return")) blockSt = returnStExpansion(tl, func);
         else if(compareTerminalStrings(t, "function")) blockSt = false;
         else{ 
             Nonterminal* expTree;
             blockSt = precParser(tl, &expTree);
+            processPossibleVariableDefinition(expTree, localSymtable);
             t = getNextToken(tl);
             blockSt = blockSt && compareLexTypes(t, SEMICOLON);
-            generateExpressionCode(expTree, false);
+            generateExpressionCode(expTree, false, localSymtable);
         }    
     }
-    else if(compareLexTypes(t, INT_LIT) || compareLexTypes(t, FLOAT_LIT) || compareLexTypes(t, STRING_LIT)){
+    else {
         Nonterminal* expTree;
         blockSt = precParser(tl, &expTree);
+        processPossibleVariableDefinition(expTree, localSymtable);
         t = getNextToken(tl);
         blockSt = blockSt && compareLexTypes(t, SEMICOLON);
-        generateExpressionCode(expTree, false);
+        generateExpressionCode(expTree, false, &symtable);
     }
     return blockSt;
 }
 
-void processPossibleVariableDefinition(Nonterminal* expTree) {
+void processPossibleVariableDefinition(Nonterminal* expTree, ht_table_t* symtable) {
     // Check if this is really is an assignment of a variable.
     if (expTree == NULL)                           return;
     if (expTree->NTType != EXPR)                   return;
     if (expTree->expr.op != AS)                    return;
     if (expTree->expr.left == NULL)                return;
     if (expTree->expr.left->NTType != VAR_ID_TERM) return;
+    processPossibleVariableDefinition(expTree->expr.right, symtable);
     // Variable assignment found
     Nonterminal* var = expTree->expr.left;
 
     // Check if variable was already added into the table
-    symtableElem* elem = ht_get(&symtable, var->term.var->name);
+    symtableElem* elem = ht_get(symtable, var->term.var->name);
     if (elem == NULL) {
+        printf("DEFVAR LF@%s\n", var->term.var->name);
         elem = malloc(sizeof(symtableElem));
         elem->type = VARIABLE;
         elem->v    = variable_clone(var->term.var);
-        ht_insert(&symtable, var->term.var->name, elem);
+        ht_insert(symtable, var->term.var->name, elem);
     }
     else {
         elem->v->dType = var->dType;
@@ -753,32 +735,33 @@ bool STExpansion(tokList* tl){
     if(compareLexTypes(t, VAR_ID)){
         Nonterminal* expTree;
         St = precParser(tl, &expTree);
-        //processPossibleVariableDefinition(expTree);
+        processPossibleVariableDefinition(expTree, &symtable);
         t = getNextToken(tl);
         St = St && compareLexTypes(t, SEMICOLON);
-        generateExpressionCode(expTree, false);
+        generateExpressionCode(expTree, false, &symtable);
     }
     else if(compareLexTypes(t, FUN_ID)){
-      //FIXME: firstPass?
-        bool firstPass = true;
-        if(compareTerminalStrings(t, "function")) St = functionDefStExpansion(tl, firstPass);
-        else if(compareTerminalStrings(t, "if")) St = ifStExpansion(tl);
-        else if(compareTerminalStrings(t, "while")) St = whileStExpansion(tl);
-        else if(compareTerminalStrings(t, "return")) St = returnStExpansion(tl);
+        if(compareTerminalStrings(t, "function")) St = functionDefStExpansion(tl, false);
+        else if(compareTerminalStrings(t, "if")) St = ifStExpansion(tl, NULL);
+        else if(compareTerminalStrings(t, "while")) St = whileStExpansion(tl, NULL);
+        else if(compareTerminalStrings(t, "return")) St = returnStExpansion(tl, NULL);
         else{
             Nonterminal* expTree;
-             St = precParser(tl, &expTree);
-             t = getNextToken(tl);
-             St = St && compareLexTypes(t, SEMICOLON);
+            St = precParser(tl, &expTree);
+            processPossibleVariableDefinition(expTree, &symtable);
+            t = getNextToken(tl);
+            St = St && compareLexTypes(t, SEMICOLON);
+            generateExpressionCode(expTree, false, &symtable);
         }     
     }
 
     else{
         Nonterminal* expTree;
         St = precParser(tl, &expTree);
+        processPossibleVariableDefinition(expTree, &symtable);
         t = getNextToken(tl);
         St = St && compareLexTypes(t, SEMICOLON);
-        generateExpressionCode(expTree, false);
+        generateExpressionCode(expTree, false, &symtable);
     }    
     return St;
 }
@@ -790,10 +773,25 @@ bool endTokenExpansion(tokList* tl){
     return end;
 }
 
-
 bool functionDefStExpansion(tokList* tl, bool firstPass){
-  //TODO: INIT symtable (function types), gather function info, insert it into symtab
-    (void) firstPass;
+    if(!firstPass){
+        Token* iter = getNextToken(tl);
+        int count = 0;
+        while(!compareLexTypes(iter, CBR_L)){
+            iter = getNextToken(tl);
+        }
+        count++;
+        while(count > 0){
+            iter = getNextToken(tl);
+            if(compareLexTypes(iter, CBR_L)){
+                count++;
+            }
+            else if(compareLexTypes(iter, CBR_R)){
+                count--;
+            }
+        }
+        return true;
+    }
     symtableElem* functionElem = malloc(sizeof(symtableElem));
     functionElem->type = FUNCTION;
     
@@ -805,7 +803,8 @@ bool functionDefStExpansion(tokList* tl, bool firstPass){
 
     funkce->args = funcArgs;
 
-    //TODO: functions symtable init
+    functionElem->f->localTable = malloc(sizeof(ht_table_t));
+    ht_init(functionElem->f->localTable);
 
     bool fDefSt = false;
     Token* t = getNextToken(tl);
@@ -820,13 +819,25 @@ bool functionDefStExpansion(tokList* tl, bool firstPass){
     t = getNextToken(tl);
     fDefSt = fDefSt && compareLexTypes(t, PAR_R);
     t = getNextToken(tl);
-    fDefSt = fDefSt && compareLexTypes(t, COLON) && typeExpansion(tl, &funkce->returnType, &funkce->nullable, true) && blockExpansion(tl);
-    //TODO: check if function is not already in symtable
+
+    printf("LABEL _%s\n", funkce->functionName);
+    fDefSt = fDefSt && compareLexTypes(t, COLON) && typeExpansion(tl, &funkce->returnType, &funkce->nullable, true) && blockExpansion(tl, funkce);
+
+    if(ht_get(&symtable, funkce->functionName)) semanticError(3);
     ht_insert(&symtable, funkce->functionName, functionElem);
+
     return fDefSt;
 }
 
-bool ifStExpansion(tokList* tl){
+bool ifStExpansion(tokList* tl, function* func){
+    ht_table_t* localSymtab;
+    if(func){
+        localSymtab = func->localTable;
+    }
+    else{
+        localSymtab = &symtable;
+    }
+
     static int ifCount = 0;
     int currentIfId = ifCount;
     ifCount++; 
@@ -838,7 +849,8 @@ bool ifStExpansion(tokList* tl){
 
     Nonterminal* expTree;
     ifSt = ifSt && precParser(tl, &expTree);
-    generateExpressionCode(expTree, false);
+    processPossibleVariableDefinition(expTree, localSymtab);
+    generateExpressionCode(expTree, false, &symtable);
 
     printf("CALL %%TO_BOOL\n");
     printf("PUSHS bool@false\n");
@@ -847,7 +859,7 @@ bool ifStExpansion(tokList* tl){
 
     t = getNextToken(tl);
     ifSt = ifSt && compareLexTypes(t, PAR_R);
-    ifSt = ifSt && blockExpansion(tl);
+    ifSt = ifSt && blockExpansion(tl, func);
 
     printf("JUMP IF%dEND\n", currentIfId);
 
@@ -858,12 +870,17 @@ bool ifStExpansion(tokList* tl){
 
     printf("LABEL ELSE%d\n", currentIfId);
 
-    ifSt = ifSt && blockExpansion(tl);
+    ifSt = ifSt && blockExpansion(tl, func);
     printf("LABEL IF%dEND\n", currentIfId); 
     return ifSt;
 }
 
-bool whileStExpansion(tokList* tl){
+bool whileStExpansion(tokList* tl, function* func){
+
+    ht_table_t* localSymtable = &symtable;
+    if(func){
+        localSymtable = func->localTable;
+    }
     static int whileCount = 0;
     int currentWhileId = whileCount;
     whileCount++;
@@ -877,16 +894,17 @@ bool whileStExpansion(tokList* tl){
 
     Nonterminal* expTree;
     whileSt = whileSt && precParser(tl, &expTree);
+    processPossibleVariableDefinition(expTree, localSymtable);
 
     printf("LABEL WHILE%d\n", currentWhileId);
-    generateExpressionCode(expTree, false);
+    generateExpressionCode(expTree, false, &symtable);
     printf("CALL %%TO_BOOL\n");
     printf("PUSHS bool@false\n");
 
     printf("JUMPIFEQS WHILE%dEND\n", currentWhileId);
 
     t = getNextToken(tl);
-    whileSt = whileSt && compareLexTypes(t, PAR_R) && blockExpansion(tl);
+    whileSt = whileSt && compareLexTypes(t, PAR_R) && blockExpansion(tl, func);
 
     printf("JUMP WHILE%d\n", currentWhileId);
     printf("LABEL WHILE%dEND\n", currentWhileId);
@@ -894,7 +912,11 @@ bool whileStExpansion(tokList* tl){
     return whileSt;
 }
 
-bool returnStExpansion(tokList* tl){
+bool returnStExpansion(tokList* tl, function* func){
+    ht_table_t* localSymtable = &symtable;
+    if(func){
+        localSymtable = func->localTable;
+    }
     bool returnSt;
     Token* t;
 
@@ -903,6 +925,9 @@ bool returnStExpansion(tokList* tl){
 
     Nonterminal* expTree;
     returnSt = returnSt && precParser(tl, &expTree);
+    processPossibleVariableDefinition(expTree, localSymtable);
+    generateExpressionCode(expTree, false, localSymtable);
+
 
     t = getNextToken(tl);
     returnSt = returnSt && compareLexTypes(t, SEMICOLON);
@@ -995,11 +1020,11 @@ void terminalToDataType(Token* t, dataType* type) {
   if(compareTerminalStrings(t, "string")) {*type = STRING; return;}
 }
 
-bool blockExpansion(tokList* tl){
+bool blockExpansion(tokList* tl, function* func){
     bool block = false;
     Token* t;
     t = getNextToken(tl);
-    block = compareLexTypes(t, CBR_L) && blockSTListExpansion(tl);
+    block = compareLexTypes(t, CBR_L) && blockSTListExpansion(tl, func);
     t = getNextToken(tl);
     block = block && compareLexTypes(t, CBR_R);
     return block;
