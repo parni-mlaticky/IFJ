@@ -17,6 +17,7 @@
     typedef struct TYPE_NAME##Elem{                                  \
         TYPE data;                                                   \
         struct TYPE_NAME##Elem* next;                                \
+        struct TYPE_NAME##Elem* prev;                                \
     } TYPE_NAME##Elem;                                               \
                                                                      \
     typedef struct TYPE_NAME##List{                                  \
@@ -31,7 +32,9 @@
     void TYPE_NAME##ListAppend(TYPE_NAME##List* list, TYPE data);    \
     void TYPE_NAME##ListDispose(TYPE_NAME##List* list) ;             \
     void TYPE_NAME##ListFirst(TYPE_NAME##List* list);                \
+    void TYPE_NAME##ListLast(TYPE_NAME##List* list);                 \
     void TYPE_NAME##ListNext(TYPE_NAME##List* list);                 \
+    void TYPE_NAME##ListPrev(TYPE_NAME##List* list);                 \
     TYPE TYPE_NAME##ListGetValue(TYPE_NAME##List* list);             \
 
 
