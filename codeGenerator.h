@@ -8,3 +8,4 @@ void generateStackSwapFunction();
 void generateNormalizeNumericTypesFunction();
 void generateNullToIntFunction();
 void generateStarterAsm();
+void generateBuiltInFunctions();
