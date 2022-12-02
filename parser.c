@@ -758,7 +758,9 @@ bool STExpansion(tokList* tl){
         generateExpressionCode(expTree, false);
     }
     else if(compareLexTypes(t, FUN_ID)){
-        if(compareTerminalStrings(t, "function")) St = functionDefStExpansion(tl);
+      //FIXME: firstPass?
+        bool firstPass = true;
+        if(compareTerminalStrings(t, "function")) St = functionDefStExpansion(tl, firstPass);
         else if(compareTerminalStrings(t, "if")) St = ifStExpansion(tl);
         else if(compareTerminalStrings(t, "while")) St = whileStExpansion(tl);
         else if(compareTerminalStrings(t, "return")) St = returnStExpansion(tl);
@@ -788,19 +790,38 @@ bool endTokenExpansion(tokList* tl){
 }
 
 
-bool functionDefStExpansion(tokList* tl){
+bool functionDefStExpansion(tokList* tl, bool firstPass){
+  //TODO: INIT symtable (function types), gather function info, insert it into symtab
+    (void) firstPass;
+    symtableElem* functionElem = malloc(sizeof(symtableElem));
+    functionElem->type = FUNCTION;
+    
+    function* funkce = malloc(sizeof(function));
+    functionElem->f = funkce;
+
+    varList* funcArgs = malloc(sizeof(varList));
+    varListInit(funcArgs);
+
+    funkce->args = funcArgs;
+
+    //TODO: functions symtable init
+
     bool fDefSt = false;
     Token* t = getNextToken(tl);
     fDefSt = compareTerminalStrings(t, "function");
     t = getNextToken(tl);
     fDefSt = fDefSt && compareLexTypes(t, FUN_ID) && !isKeyword(t);
+    fprintf(stderr, "EXPANDING FUNCTION WITH NAME: %s\n", t->string);
+    funkce->functionName = t->string;
     t = getNextToken(tl);
     fDefSt = fDefSt && compareLexTypes(t, PAR_L);
-    fDefSt = fDefSt && paramsExpansion(tl);
+    fDefSt = fDefSt && paramsExpansion(tl, funcArgs);
     t = getNextToken(tl);
     fDefSt = fDefSt && compareLexTypes(t, PAR_R);
     t = getNextToken(tl);
-    fDefSt = fDefSt && compareLexTypes(t, COLON) && typeExpansion(tl) && blockExpansion(tl);
+    fDefSt = fDefSt && compareLexTypes(t, COLON) && typeExpansion(tl, &funkce->returnType, &funkce->nullable, true) && blockExpansion(tl);
+    //TODO: check if function is not already in symtable
+    ht_insert(&symtable, funkce->functionName, functionElem);
     return fDefSt;
 }
 
@@ -887,36 +908,51 @@ bool returnStExpansion(tokList* tl){
     return returnSt;
 }
 
-bool varExpansion(tokList* tl){
+bool varExpansion(tokList* tl, variable* var){
     Token* t = getNextToken(tl);
+    fprintf(stderr, "EXPANDING VARIABLE WITH NAME: %s\n", t->string);
+    var->name = t->string;
     return compareLexTypes(t, VAR_ID);
 }
 
-bool paramsExpansion(tokList* tl){
+bool paramsExpansion(tokList* tl, varList* args){
     bool params = false;
     Token* t;
     t = tokListGetValue(tl);
+    // () blank function call
     if(compareLexTypes(t, PAR_R)) params = true;
     else{
-        params = typeExpansion(tl);
-        params = params && varExpansion(tl) && paramListExpansion(tl);
+        variable* var = malloc(sizeof(variable));
+
+        //var type
+        //dataType variableType;
+        params = typeExpansion(tl, &var->dType, &var->nullable, false);
+        //other var info
+        params = params && varExpansion(tl, var) && paramListExpansion(tl, args);
+        fprintf(stderr, "APPENDING VARIABLE TO ARGS WITH NAME: %s\n", var->name);
+        varListAppend(args, *var);
     }
     return params;
 }
 
-bool paramListExpansion(tokList* tl){
+bool paramListExpansion(tokList* tl, varList* args){
     bool paramList = false;
     Token* t;
     t = tokListGetValue(tl);
     if(compareLexTypes(t, PAR_R)) paramList = true;
     else{
+        variable* var = malloc(sizeof(variable));
+
+        //dataType variableType;
         t = getNextToken(tl);
-        paramList = compareLexTypes(t, COMMA) && typeExpansion(tl) && varExpansion(tl) && paramListExpansion(tl);
+        paramList = compareLexTypes(t, COMMA) && typeExpansion(tl, &var->dType, &var->nullable, false) && varExpansion(tl, var) && paramListExpansion(tl, args);
+        fprintf(stderr, "APPENDING VARIABLE TO ARGS WITH NAME: %s\n", var->name);
+        varListAppend(args, *var);
     }
     return paramList;
 }
 
-bool typeExpansion(tokList* tl){
+bool typeExpansion(tokList* tl, dataType* returnType, bool* nullable, bool isReturnType){
     bool type = false;
     bool questionMark = false;
     Token* t;
@@ -924,21 +960,38 @@ bool typeExpansion(tokList* tl){
     t = tokListGetValue(tl);
     if(compareLexTypes(t, QUESTION_MARK)){
         questionMark = true;
+        *nullable = true;
         getNextToken(tl);
     }
-    type = typeNameExpansion(tl, questionMark);
+    type = typeNameExpansion(tl, questionMark, returnType, isReturnType);
     return type;
 }
 
 
-bool typeNameExpansion(tokList* tl, bool questionMark){
+bool typeNameExpansion(tokList* tl, bool questionMark, dataType* returnType, bool isReturnType){
     bool typeName;
     Token* t;
     t = getNextToken(tl);
     typeName = compareLexTypes(t, FUN_ID);
+    if(isReturnType) {
     typeName = typeName && (compareTerminalStrings(t, "int") || compareTerminalStrings(t, "float") || 
                             (compareTerminalStrings(t, "void") && !questionMark) || compareTerminalStrings(t, "string"));
-    return typeName;                        
+    } else {
+       typeName = typeName && (compareTerminalStrings(t, "int") || compareTerminalStrings(t, "float") || compareTerminalStrings(t, "string"));
+    }
+    //FIXME: returnType is not bool
+    //TODO:
+    terminalToDataType(t, returnType);
+    return typeName;                  
+}
+
+void terminalToDataType(Token* t, dataType* type) {
+  fprintf(stderr, "SETTING DATATYPE OF TOKEN TO %s\n", t->string);
+  if(compareTerminalStrings(t, "int"))    {*type = INT; return;}
+  if(compareTerminalStrings(t, "float"))  {*type = FLOAT; return;}
+  //FIXME:
+  if(compareTerminalStrings(t, "void"))   {*type = NULL_T; return;}
+  if(compareTerminalStrings(t, "string")) {*type = STRING; return;}
 }
 
 bool blockExpansion(tokList* tl){
