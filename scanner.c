@@ -260,7 +260,7 @@ StateInfo get_next_state(ScannerState current_state, int *c, FSMMemory* memory) 
                     return (StateInfo) {.result = R_SKIP, .next_state = S_START_OF_COMMENT_OR_DIV};
 
                 case '$':
-                    return (StateInfo) {.result = R_SKIP, .next_state = S_START_VARIABLE_ID};
+                    return (StateInfo) {.result = R_ADD, .next_state = S_START_VARIABLE_ID};
 
                 case '>':
                     return (StateInfo) {.result = R_SKIP, .next_state = S_GREATER_THAN};

@@ -15,7 +15,7 @@ typedef struct Nonterminal{
     dataType dType; // If this nonterminal is a term, this is its data type
     
     // If nonterminal is a term, this is where its literal or var name/function name is stored
-    union{
+    union term{
         variable* var;
         struct funcall* func;
         char* stringLit;

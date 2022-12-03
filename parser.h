@@ -1,15 +1,18 @@
+#pragma once
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stdlib.h>
 #include <stdbool.h>
+#include "hashtable.h"
 #include "token.h"
-#include "list.h"
 #include "scanner.h"
 #include "stack.h"
 #include "precParsingEnums.h"
-#include "Nonterminal.h"
-#include "funcall.h"
 #include "codeGenerator.h"
+#include "misc.h"
+#include "variable.h"
+
 
 #define KEYWORD_COUNT 11
 
@@ -25,10 +28,11 @@ typedef enum{
     EXP_PAR
 } expressionRule;
 
+
+bool firstPass(tokList* tl);
 bool parse_file(FILE* file);
 bool isKeyword(Token* t);
 
-void semanticError(int code);
 void syntaxError(Token* errorToken, char* errMessage);
 
 terminalType lexEnumToTerminalEnum(Lex lex);
@@ -45,6 +49,8 @@ bool recursiveDescent(tokList* tl);
 
 dataType dataTypeCompatibilityCheckOrConversion(Nonterminal* nt1, stackElement* operator, Nonterminal* nt2);
 
+void processPossibleVariableDefinition(Nonterminal* expTree, ht_table_t* symtable);
+
 bool progExpansion(tokList* tl);
 bool declareStExpansion(tokList* tl);
 
@@ -54,17 +60,17 @@ bool STExpansion(tokList* tl);
 
 bool endTokenExpansion(tokList* tl);
 
-bool blockSTListExpansion(tokList* tl);
+bool blockSTListExpansion(tokList* tl, function* func);
 
-bool blockSTExpansion(tokList* tl);
+bool blockSTExpansion(tokList* tl, function* func);
 
 bool functionDefStExpansion(tokList* tl, bool firstPass);
 
-bool ifStExpansion(tokList* tl);
+bool ifStExpansion(tokList* tl, function* func);
 
-bool whileStExpansion(tokList* tl);
+bool whileStExpansion(tokList* tl, function* func);
 
-bool returnStExpansion(tokList* tl);
+bool returnStExpansion(tokList* tl, function* func);
 
 bool varExpansion(tokList* tl, variable* var);
 
@@ -75,7 +81,7 @@ bool paramListExpansion(tokList* tl, varList* args);
 bool typeExpansion(tokList* tl, dataType* returnType, bool* nullable, bool isReturnType);
 
 bool typeNameExpansion(tokList* tl, bool questionMark, dataType* returnType, bool isReturnType);
-bool blockExpansion(tokList* tl);
+bool blockExpansion(tokList* tl, function* func);
 
 bool isRelOperator(terminalType tType);
 
@@ -86,6 +92,7 @@ void terminalToDataType(Token* t, dataType* type);
 bool precParser(tokList* tl, Nonterminal** finalNonterm);
 
 Nonterminal* createIntLiteralNonterminal(int value);
+void addBuiltinFunctionsToSymtable();
 
 Nonterminal* createStringLiteralNonterminal(char* string);
 
