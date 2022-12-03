@@ -23,3 +23,4 @@ void generateLessEqual();
 void generateGreatEqual();
 void generateEmptyStringToInt();
 void defineFunctionVars(ht_table_t symtable);
+int countEscapeSequences(char *string);

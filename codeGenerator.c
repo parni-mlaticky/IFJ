@@ -7,7 +7,7 @@ void generateStarterAsm() {
     printf("CREATEFRAME\nPUSHFRAME\n");
     printf("JUMP %%PROG_START\n");
     generateToBoolFunction();
-    //generateToFloatFunction();
+    // generateToFloatFunction();
     generateEnforceTypesFunction();
     generateStackSwapFunction();
     generateNormalizeNumericTypesFunction();
@@ -24,11 +24,10 @@ void generateStarterAsm() {
     printf("LABEL %%PROG_START\n");
 }
 
-
-void defineFunctionVars(ht_table_t symtable){
-    for(int i = 0; i < MAX_HT_SIZE; i++){
-        if(symtable[i]){
-            if(symtable[i]->value->type == VARIABLE){
+void defineFunctionVars(ht_table_t symtable) {
+    for (int i = 0; i < MAX_HT_SIZE; i++) {
+        if (symtable[i]) {
+            if (symtable[i]->value->type == VARIABLE) {
                 printf("DEFVAR LF@%s\n", symtable[i]->value->v->name);
             }
         }
@@ -40,268 +39,267 @@ void defineFunctionVars(ht_table_t symtable){
  * Exits if the variable doesn't have the given type.
  */
 void generateEnforceTypesFunction() {
-    printf("LABEL %%ENFORCE_TYPES\n"
-           // Popping type string
-           "POPS GF@%%RAX\n"
-           // Popping value
-           "POPS GF@%%RBX\n"
-           "PUSHS GF@%%RBX\n"
+    printf(
+        "LABEL %%ENFORCE_TYPES\n"
+        // Popping type string
+        "POPS GF@%%RAX\n"
+        // Popping value
+        "POPS GF@%%RBX\n"
+        "PUSHS GF@%%RBX\n"
 
-           "TYPE GF@%%RBX GF@%%RBX\n"
-           "JUMPIFEQ %%GEN_ENF_TYP-END GF@%%RAX GF@%%RBX\n"
-           "EXIT int@7\n"
-           "LABEL %%GEN_ENF_TYP-END\n"
-           "RETURN\n"
-    );
+        "TYPE GF@%%RBX GF@%%RBX\n"
+        "JUMPIFEQ %%GEN_ENF_TYP-END GF@%%RAX GF@%%RBX\n"
+        "EXIT int@7\n"
+        "LABEL %%GEN_ENF_TYP-END\n"
+        "RETURN\n");
 }
 
-
 void generateNullToIntFunction() {
-    printf("LABEL %%NULL_TO_INT\n"
-           // First operand
-           "POPS GF@%%RAX\n"
-           "PUSHS GF@%%RAX\n"
-           "TYPE GF@%%RBX GF@%%RAX\n"
-           "JUMPIFNEQ %%NULL_TO_INT_BNN GF@%%RBX string@nil\n"
-           "PUSHS int@0\n"
-           "JUMP %%NULL_TO_INT_T\n"
+    printf(
+        "LABEL %%NULL_TO_INT\n"
+        // First operand
+        "POPS GF@%%RAX\n"
+        "PUSHS GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RAX\n"
+        "JUMPIFNEQ %%NULL_TO_INT_BNN GF@%%RBX string@nil\n"
+        "PUSHS int@0\n"
+        "JUMP %%NULL_TO_INT_T\n"
 
-           "LABEL %%NULL_TO_INT_BNN\n"
-           "PUSHS GF@%%RAX\n"
+        "LABEL %%NULL_TO_INT_BNN\n"
+        "PUSHS GF@%%RAX\n"
 
-           // Second operand
-           "LABEL %%NULL_TO_INT_T\n"
-           "POPS GF@%%RBX\n"
-           "POPS GF@%%RBX\n"
-           "TYPE GF@%%RAX GF@%%RBX\n"
-           "JUMPIFNEQ %%NULL_TO_INT_TNN GF@%%RAX string@nil\n"
-           "PUSHS int@0\n"
-           "JUMP %%NULL_TO_INT_END\n"
+        // Second operand
+        "LABEL %%NULL_TO_INT_T\n"
+        "POPS GF@%%RBX\n"
+        "POPS GF@%%RBX\n"
+        "TYPE GF@%%RAX GF@%%RBX\n"
+        "JUMPIFNEQ %%NULL_TO_INT_TNN GF@%%RAX string@nil\n"
+        "PUSHS int@0\n"
+        "JUMP %%NULL_TO_INT_END\n"
 
-           "LABEL %%NULL_TO_INT_TNN\n"
-           "PUSHS GF@%%RBX\n"
+        "LABEL %%NULL_TO_INT_TNN\n"
+        "PUSHS GF@%%RBX\n"
 
-           "LABEL %%NULL_TO_INT_END\n"
-           "RETURN\n"
-    );
+        "LABEL %%NULL_TO_INT_END\n"
+        "RETURN\n");
 }
 
 void generateNormalizeNumericTypesFunction() {
-    printf("LABEL %%NORMALIZE_NUMERIC_TYPES\n"
-           "CALL %%NULL_TO_INT\n"
-           "POPS GF@%%RAX\n"
-           "POPS GF@%%RBX\n"
-           "PUSHS GF@%%RBX\n"
-           "PUSHS GF@%%RAX\n"
-           "TYPE GF@%%RAX GF@%%RAX\n"
-           "TYPE GF@%%RBX GF@%%RBX\n"
-           "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-MATCH GF@%%RAX GF@%%RBX\n"
-           // Types aren't mathing
-           // Verify that types are numeric for RAX
-           "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-TEST-RBX GF@%%RAX string@int\n"
-           "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-TEST-RBX GF@%%RAX string@float\n"
-           "EXIT int@7\n"
+    printf(
+        "LABEL %%NORMALIZE_NUMERIC_TYPES\n"
+        "CALL %%NULL_TO_INT\n"
+        "POPS GF@%%RAX\n"
+        "POPS GF@%%RBX\n"
+        "PUSHS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
+        "TYPE GF@%%RAX GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RBX\n"
+        "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-MATCH GF@%%RAX GF@%%RBX\n"
+        // Types aren't mathing
+        // Verify that types are numeric for RAX
+        "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-TEST-RBX GF@%%RAX string@int\n"
+        "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-TEST-RBX GF@%%RAX string@float\n"
+        "EXIT int@7\n"
 
-           // Verify that types are numeric for RBX
-           "LABEL %%NORMALIZE_NUMERIC_TYPES-TEST-RBX\n"
-           "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-MISSMATCH GF@%%RBX string@int\n"
-           "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-MISSMATCH GF@%%RBX string@float\n"
-           "EXIT int@7\n"
+        // Verify that types are numeric for RBX
+        "LABEL %%NORMALIZE_NUMERIC_TYPES-TEST-RBX\n"
+        "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-MISSMATCH GF@%%RBX string@int\n"
+        "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-MISSMATCH GF@%%RBX string@float\n"
+        "EXIT int@7\n"
 
-           // If types are numeric and not matching, it means that on is int and the other
-           // float. In that case we want to convert to floats.
-           "LABEL %%NORMALIZE_NUMERIC_TYPES-MISSMATCH\n"
-           "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-CONV-EBX GF@%%RAX string@float\n"
-           "POPS GF@%%RAX\n"
-           "INT2FLOAT GF@%%RAX GF@%%RAX\n"
-           "PUSHS GF@%%RAX\n"
-           "JUMP %%NORMALIZE_NUMERIC_TYPES-END\n"
+        // If types are numeric and not matching, it means that on is int and the other
+        // float. In that case we want to convert to floats.
+        "LABEL %%NORMALIZE_NUMERIC_TYPES-MISSMATCH\n"
+        "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-CONV-EBX GF@%%RAX string@float\n"
+        "POPS GF@%%RAX\n"
+        "INT2FLOAT GF@%%RAX GF@%%RAX\n"
+        "PUSHS GF@%%RAX\n"
+        "JUMP %%NORMALIZE_NUMERIC_TYPES-END\n"
 
-           "LABEL %%NORMALIZE_NUMERIC_TYPES-CONV-EBX\n"
-           "POPS GF@%%RAX\n"
-           "POPS GF@%%RBX\n"
-           "INT2FLOAT GF@%%RBX GF@%%RBX\n"
-           "PUSHS GF@%%RBX\n"
-           "PUSHS GF@%%RAX\n"
-           "JUMP %%NORMALIZE_NUMERIC_TYPES-END\n"
+        "LABEL %%NORMALIZE_NUMERIC_TYPES-CONV-EBX\n"
+        "POPS GF@%%RAX\n"
+        "POPS GF@%%RBX\n"
+        "INT2FLOAT GF@%%RBX GF@%%RBX\n"
+        "PUSHS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
+        "JUMP %%NORMALIZE_NUMERIC_TYPES-END\n"
 
-           // Types are already matching!
-           "LABEL %%NORMALIZE_NUMERIC_TYPES-MATCH\n"
-           // Check if they matching their matching type is even numeric
-           "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-END GF@%%RAX string@int\n"
-           "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-END GF@%%RAX string@float\n"
-           "EXIT int@7\n"
+        // Types are already matching!
+        "LABEL %%NORMALIZE_NUMERIC_TYPES-MATCH\n"
+        // Check if they matching their matching type is even numeric
+        "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-END GF@%%RAX string@int\n"
+        "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-END GF@%%RAX string@float\n"
+        "EXIT int@7\n"
 
-           "LABEL %%NORMALIZE_NUMERIC_TYPES-END\n"
-           "RETURN\n"
-    );
+        "LABEL %%NORMALIZE_NUMERIC_TYPES-END\n"
+        "RETURN\n");
 }
 
 /**
  * Swaps two topmost values on the stack
  */
 void generateStackSwapFunction() {
-    printf("LABEL %%STACK_SWAP\n"
-           "POPS GF@%%RAX\n"
-           "POPS GF@%%RBX\n"
-           "PUSHS GF@%%RAX\n"
-           "PUSHS GF@%%RBX\n"
-           "RETURN\n"
-    );
+    printf(
+        "LABEL %%STACK_SWAP\n"
+        "POPS GF@%%RAX\n"
+        "POPS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
+        "PUSHS GF@%%RBX\n"
+        "RETURN\n");
 }
 
 void generateCompareDtypes() {
-    printf("LABEL %%COMPARE_DTYPES\n"
-           "POPS GF@%%RAX\n"
-           "POPS GF@%%RBX\n"
-           "PUSHS GF@%%RBX\n"
-           "PUSHS GF@%%RAX\n"
+    printf(
+        "LABEL %%COMPARE_DTYPES\n"
+        "POPS GF@%%RAX\n"
+        "POPS GF@%%RBX\n"
+        "PUSHS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
 
-           "TYPE GF@%%RAX GF@%%RAX\n"
-           "TYPE GF@%%RBX GF@%%RBX\n"
+        "TYPE GF@%%RAX GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RBX\n"
 
-           "EQ GF@%%RAX GF@%%RAX GF@%%RBX\n"
-           "PUSHS GF@%%RAX\n"
-           "RETURN\n"
-    );
+        "EQ GF@%%RAX GF@%%RAX GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n");
 }
 
 void generateEquality() {
-    printf("LABEL %%EQUALITY\n"
-           "CALL %%COMPARE_DTYPES\n"
-           "POPS GF@%%RAX\n"
-           "JUMPIFEQ %%EQUALITY-EXIT GF@%%RAX bool@false\n"
+    printf(
+        "LABEL %%EQUALITY\n"
+        "CALL %%COMPARE_DTYPES\n"
+        "POPS GF@%%RAX\n"
+        "JUMPIFEQ %%EQUALITY-EXIT GF@%%RAX bool@false\n"
 
-           "EQS\n"
-           "RETURN\n"
+        "EQS\n"
+        "RETURN\n"
 
-           "LABEL %%EQUALITY-EXIT\n"
-           "PUSHS bool@false\n"
-           "RETURN\n"
-    );
+        "LABEL %%EQUALITY-EXIT\n"
+        "PUSHS bool@false\n"
+        "RETURN\n");
 }
 
 void generateNonEquality() {
-    printf("LABEL %%NONEQUALITY\n"
-           "CALL %%COMPARE_DTYPES\n"
-           "POPS GF@%%RAX\n"
-           "JUMPIFEQ %%NONEQUALITY-EXIT GF@%%RAX bool@false\n"
+    printf(
+        "LABEL %%NONEQUALITY\n"
+        "CALL %%COMPARE_DTYPES\n"
+        "POPS GF@%%RAX\n"
+        "JUMPIFEQ %%NONEQUALITY-EXIT GF@%%RAX bool@false\n"
 
-           "JUMPIFNEQS %%NONEQUALITY-EXIT\n"
-           "PUSHS bool@false\n"
-           "RETURN\n"
+        "JUMPIFNEQS %%NONEQUALITY-EXIT\n"
+        "PUSHS bool@false\n"
+        "RETURN\n"
 
-           "LABEL %%NONEQUALITY-TRUE\n"
-           "PUSHS bool@true\n"
-           "RETURN\n"
+        "LABEL %%NONEQUALITY-TRUE\n"
+        "PUSHS bool@true\n"
+        "RETURN\n"
 
-           "LABEL %%NONEQUALITY-EXIT\n"
-           "PUSHS bool@true\n"
-           "RETURN\n"
-    );
+        "LABEL %%NONEQUALITY-EXIT\n"
+        "PUSHS bool@true\n"
+        "RETURN\n");
 }
 
 void generateLess() {
-    printf("LABEL %%LESS\n"
-           // Compare with null.
-           "POPS GF@%%RAX\n"
-           "POPS GF@%%RBX\n"
-           "PUSHS GF@%%RBX\n"
-           "PUSHS GF@%%RAX\n"
-           "TYPE GF@%%RAX GF@%%RAX\n"
-           "TYPE GF@%%RBX GF@%%RBX\n"
-           "JUMPIFEQ %%LESS-FALSE GF@%%RAX nil@nil\n"
-           "JUMPIFEQ %%LESS-FALSE GF@%%RBX nil@nil\n"
-           "LTS\n"
-           "RETURN\n"
+    printf(
+        "LABEL %%LESS\n"
+        // Compare with null.
+        "POPS GF@%%RAX\n"
+        "POPS GF@%%RBX\n"
+        "PUSHS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
+        "TYPE GF@%%RAX GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RBX\n"
+        "JUMPIFEQ %%LESS-FALSE GF@%%RAX nil@nil\n"
+        "JUMPIFEQ %%LESS-FALSE GF@%%RBX nil@nil\n"
+        "LTS\n"
+        "RETURN\n"
 
-           "LABEL %%LESS-FALSE\n"
-           "PUSHS bool@false\n"
-           "RETURN\n"
-    );
+        "LABEL %%LESS-FALSE\n"
+        "PUSHS bool@false\n"
+        "RETURN\n");
 }
 
 void generateEmptyStringToInt() {
-    printf("LABEL %%EMPTY_STRINGS_TO_INT\n"
-           "POPS GF@%%RAX\n"
-           "TYPE GF@%%RBX GF@%%RAX\n"
-           "JUMPIFEQ %%EMPTY_STRINGS_TO_INT-STRING GF@%%RBX string@string\n"
-           "PUSHS GF@%%RAX\n"
-           "RETURN\n"
+    printf(
+        "LABEL %%EMPTY_STRINGS_TO_INT\n"
+        "POPS GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RAX\n"
+        "JUMPIFEQ %%EMPTY_STRINGS_TO_INT-STRING GF@%%RBX string@string\n"
+        "PUSHS GF@%%RAX\n"
+        "RETURN\n"
 
-           "LABEL %%EMPTY_STRINGS_TO_INT-STRING\n"
-           "JUMPIFNEQ %%EMPTY_STRINGS_TO_INT-NONEMPTY GF@%%RAX string@\n"
-           "PUSHS int@0\n"
-           "RETURN\n"
+        "LABEL %%EMPTY_STRINGS_TO_INT-STRING\n"
+        "JUMPIFNEQ %%EMPTY_STRINGS_TO_INT-NONEMPTY GF@%%RAX string@\n"
+        "PUSHS int@0\n"
+        "RETURN\n"
 
-           "LABEL %%EMPTY_STRINGS_TO_INT-NONEMPTY\n"
-           "EXIT int@7\n"
-    );
+        "LABEL %%EMPTY_STRINGS_TO_INT-NONEMPTY\n"
+        "EXIT int@7\n");
 }
 
 void generateLessEqual() {
-    printf("LABEL %%LESS_EQUAL\n"
-           "CALL %%EMPTY_STRINGS_TO_INT\n"
-           "CALL %%STACK_SWAP\n"
-           "CALL %%EMPTY_STRINGS_TO_INT\n"
-           "CALL %%STACK_SWAP\n"
-           "CALL %%NULL_TO_INT\n"
-           "CALL %%NORMALIZE_NUMERIC_TYPES\n"
+    printf(
+        "LABEL %%LESS_EQUAL\n"
+        "CALL %%EMPTY_STRINGS_TO_INT\n"
+        "CALL %%STACK_SWAP\n"
+        "CALL %%EMPTY_STRINGS_TO_INT\n"
+        "CALL %%STACK_SWAP\n"
+        "CALL %%NULL_TO_INT\n"
+        "CALL %%NORMALIZE_NUMERIC_TYPES\n"
 
-           "GTS\n"
-           "POPS GF@%%RAX\n"
-           "JUMPIFEQ %%LESS_EQUAL-FALSE GF@%%RAX bool@false\n"
-           "PUSHS bool@false\n"
-           "RETURN\n"
+        "GTS\n"
+        "POPS GF@%%RAX\n"
+        "JUMPIFEQ %%LESS_EQUAL-FALSE GF@%%RAX bool@false\n"
+        "PUSHS bool@false\n"
+        "RETURN\n"
 
-           "LABEL %%LESS_EQUAL-FALSE\n"
-           "PUSHS bool@true\n"
-           "RETURN\n"
-    );
+        "LABEL %%LESS_EQUAL-FALSE\n"
+        "PUSHS bool@true\n"
+        "RETURN\n");
 }
 
 void generateGreatEqual() {
-    printf("LABEL %%GREAT_EQUAL\n"
-           "CALL %%EMPTY_STRINGS_TO_INT\n"
-           "CALL %%STACK_SWAP\n"
-           "CALL %%EMPTY_STRINGS_TO_INT\n"
-           "CALL %%STACK_SWAP\n"
-           "CALL %%NULL_TO_INT\n"
-           "CALL %%NORMALIZE_NUMERIC_TYPES\n"
+    printf(
+        "LABEL %%GREAT_EQUAL\n"
+        "CALL %%EMPTY_STRINGS_TO_INT\n"
+        "CALL %%STACK_SWAP\n"
+        "CALL %%EMPTY_STRINGS_TO_INT\n"
+        "CALL %%STACK_SWAP\n"
+        "CALL %%NULL_TO_INT\n"
+        "CALL %%NORMALIZE_NUMERIC_TYPES\n"
 
-           "LTS\n"
-           "POPS GF@%%RAX\n"
-           "JUMPIFEQ %%GREAT_EQUAL-FALSE GF@%%RAX bool@false\n"
-           "PUSHS bool@false\n"
-           "RETURN\n"
+        "LTS\n"
+        "POPS GF@%%RAX\n"
+        "JUMPIFEQ %%GREAT_EQUAL-FALSE GF@%%RAX bool@false\n"
+        "PUSHS bool@false\n"
+        "RETURN\n"
 
-           "LABEL %%GREAT_EQUAL-FALSE\n"
-           "PUSHS bool@true\n"
-           "RETURN\n"
-    );
+        "LABEL %%GREAT_EQUAL-FALSE\n"
+        "PUSHS bool@true\n"
+        "RETURN\n");
 }
 
 void generateGreat() {
-    printf("LABEL %%GREAT\n"
-           // Compare with null.
-           "POPS GF@%%RAX\n"
-           "POPS GF@%%RBX\n"
-           "PUSHS GF@%%RBX\n"
-           "PUSHS GF@%%RAX\n"
-           "TYPE GF@%%RAX GF@%%RAX\n"
-           "TYPE GF@%%RBX GF@%%RBX\n"
-           "JUMPIFEQ %%GREAT-FALSE GF@%%RAX nil@nil\n"
-           "JUMPIFEQ %%GREAT-FALSE GF@%%RBX nil@nil\n"
-           "GTS\n"
-           "RETURN\n"
+    printf(
+        "LABEL %%GREAT\n"
+        // Compare with null.
+        "POPS GF@%%RAX\n"
+        "POPS GF@%%RBX\n"
+        "PUSHS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
+        "TYPE GF@%%RAX GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RBX\n"
+        "JUMPIFEQ %%GREAT-FALSE GF@%%RAX nil@nil\n"
+        "JUMPIFEQ %%GREAT-FALSE GF@%%RBX nil@nil\n"
+        "GTS\n"
+        "RETURN\n"
 
-           "LABEL %%GREAT-FALSE\n"
-           "PUSHS bool@false\n"
-           "RETURN\n"
-    );
+        "LABEL %%GREAT-FALSE\n"
+        "PUSHS bool@false\n"
+        "RETURN\n");
 }
 
-void generateToBoolFunction(){
+void generateToBoolFunction() {
     printf(
         // Pops the top of the stack into RAX and checks what type it is
         "LABEL %%TO_BOOL\n"
@@ -341,40 +339,62 @@ void generateToBoolFunction(){
         "PUSHS bool@false\n"
 
         "LABEL %%RET_BOOL\n"
-        "RETURN\n"
-        );
+        "RETURN\n");
 }
 
-void convertExpResultToBoolValue(){
+void convertExpResultToBoolValue() {
     printf("CALL %%TO_BOOL\n");
 }
 
-void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment, ht_table_t* symtable){
-    if(!root){
+int countEscapeSequences(char *string) {
+    int count = 0;
+    for (size_t i = 0; string[i] != '\0'; i++) {
+        if ((string[i] >= 0 && string[i] <= 32) || string[i] == 35 || string[i] == 92) {
+            count++;
+        }
+    }
+    return count;
+}
+
+void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_table_t *symtable) {
+    if (!root) {
         return;
     }
-    if(root->NTType != EXPR){
-        switch(root->NTType){
+    if (root->NTType != EXPR) {
+        switch (root->NTType) {
             case VAR_ID_TERM:
-                if(!isLeftSideOfAssignment){
+                if (!isLeftSideOfAssignment) {
                     printf("PUSHS LF@%s\n", root->term.var->name);
                 }
                 break;
             case LITERAL_TERM:
-                switch(root->dType){
+                switch (root->dType) {
                     case INT:
                         printf("PUSHS int@%lld\n", root->term.integerLit);
                         break;
                     case FLOAT:
                         printf("PUSHS float@%a\n", root->term.floatLit);
                         break;
-                    case STRING:
-                        printf("PUSHS string@%s\n", root->term.stringLit);
+                    case STRING:;
+                        int newSize = countEscapeSequences(root->term.stringLit) * 5 * sizeof(char);
+                        char *newString = malloc(strlen(root->term.stringLit) * sizeof(char) + newSize);
+                        char buffer[7];
+                        for (size_t i = 0; root->term.stringLit[i] != '\0'; i++) {
+                            if ((root->term.stringLit[i] >= 0 && root->term.stringLit[i] <= 32) || root->term.stringLit[i] == 35 || root->term.stringLit[i] == 92) {
+                                sprintf(buffer, "\\0%d", root->term.stringLit[i]);
+                            } else {
+                                sprintf(buffer, "%c", root->term.stringLit[i]);
+                            }
+                            strcat(newString, buffer);
+                        }
+
+                        printf("PUSHS string@%s\n", newString);
                         break;
                     case NULL_T:
-                        printf("PUSHS nil@nil\n");  
-                        break;        
-                    default: break;     
+                        printf("PUSHS nil@nil\n");
+                        break;
+                    default:
+                        break;
                 }
                 break;
             case FUNCALL_TERM:
@@ -386,71 +406,71 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment, ht_t
                 // clean up??
                 // profit??
                 ;
-                symtableElem* func = ht_get(symtable, root->term.func->funId);
-                if(!func) semanticError(3);
+                symtableElem *func = ht_get(symtable, root->term.func->funId);
+                if (!func)
+                    semanticError(3);
                 nontermListLast(root->term.func->args);
-                Nonterminal* nt;
-                for(int i = 0; i < root->term.func->args->len; i++){
+                Nonterminal *nt;
+                for (int i = 0; i < root->term.func->args->len; i++) {
                     nt = nontermListGetValue(root->term.func->args);
                     generateExpressionCode(nt, false, symtable);
                     nontermListPrev(root->term.func->args);
                 }
                 break;
-            default: break;    
+            default:
+                break;
         }
-        
-    }
-    else{
-        if(root->expr.op == AS){
+    } else {
+        if (root->expr.op == AS) {
             // Assignments are traversed using reverse postorder.
             generateExpressionCode(root->expr.right, false, symtable);
             generateExpressionCode(root->expr.left, true, symtable);
-        }
-        else{
+        } else {
             // All other expressions are traversed using normal postorder.
             generateExpressionCode(root->expr.left, false, symtable);
             generateExpressionCode(root->expr.right, false, symtable);
         }
-        switch(root->expr.op){
+        switch (root->expr.op) {
             case PLUS:
-                printf("CALL %%NORMALIZE_NUMERIC_TYPES\n"
-                       "ADDS\n"
-                 );
+                printf(
+                    "CALL %%NORMALIZE_NUMERIC_TYPES\n"
+                    "ADDS\n");
                 break;
 
             case MINUS:
-                printf("CALL %%NORMALIZE_NUMERIC_TYPES\n"
-                       "SUBS\n"
-                );
+                printf(
+                    "CALL %%NORMALIZE_NUMERIC_TYPES\n"
+                    "SUBS\n");
                 break;
 
             case DIV:
-                printf("CALL %%TRY_INT_2_FLOAT\n"
-                       "CALL %%STACK_SWAP\n"
-                       "CALL %%TRY_INT_2_FLOAT\n"
-                       "CALL %%STACK_SWAP\n"
-                       "DIVS\n"
-                );
+                printf(
+                    "CALL %%TRY_INT_2_FLOAT\n"
+                    "CALL %%STACK_SWAP\n"
+                    "CALL %%TRY_INT_2_FLOAT\n"
+                    "CALL %%STACK_SWAP\n"
+                    "DIVS\n");
                 break;
 
             case MUL:
-                printf("CALL %%NORMALIZE_NUMERIC_TYPES\n"
-                       "MULS\n"
-                );
+                printf(
+                    "CALL %%NORMALIZE_NUMERIC_TYPES\n"
+                    "MULS\n");
                 break;
 
             case CAT:
-                printf("PUSHS string@string\n"
-                       "CALL %%ENFORCE_TYPES\n"
-                       "CALL %%STACK_SWAP\n"
+                printf(
+                    "PUSHS string@string\n"
+                    "CALL %%ENFORCE_TYPES\n"
+                    "CALL %%STACK_SWAP\n"
 
-                       "PUSHS string@string\n"
-                       "CALL %%ENFORCE_TYPES\n"
-                       "POPS gf@%%RBX\n"
-                       "POPS gf@%%RAX\n"
+                    "PUSHS string@string\n"
+                    "CALL %%ENFORCE_TYPES\n"
+                    "POPS gf@%%RBX\n"
+                    "POPS gf@%%RAX\n"
 
-                       "CONCAT GF@%%RAX gf@%%RBX gf@%%RAX\n"
-                       "PUSHS gf@%%RAX\n");
+                    "CONCAT GF@%%RAX gf@%%RBX gf@%%RAX\n"
+                    "PUSHS gf@%%RAX\n");
 
                 break;
 
@@ -483,37 +503,34 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment, ht_t
                 printf("PUSHS LF@%s\n", root->expr.left->term.var->name);
                 return;
 
-            default: break;    
+            default:
+                break;
         }
     }
 }
 
-
-void generateBuiltInFunctions(){
+void generateBuiltInFunctions() {
     // reads() READ STRING
     printf(
         "LABEL %%READS\n"
         "READ GF@%%RAX string\n"
         "PUSHS GF@%%RAX\n"
-        "RETURN\n"
-        );
+        "RETURN\n");
 
-    // readi() READ INT    
+    // readi() READ INT
     printf(
         "LABEL %%READI\n"
         "READ GF@%%RAX int\n"
         "PUSHS GF@%%RAX\n"
-        "RETURN\n"
-        );
-    // readf() READ FLOAT    
+        "RETURN\n");
+    // readf() READ FLOAT
     printf(
         "LABEL %%READF\n"
         "READ GF@%%RAX float\n"
         "PUSHS GF@%%RAX\n"
-        "RETURN\n"
-        );
+        "RETURN\n");
 
-    // write()    
+    // write()
     printf(
         // Since this function can have any number of arguments,
         // the number of arguments will be pushed together with the arguments themselves
@@ -531,8 +548,7 @@ void generateBuiltInFunctions(){
         "JUMP %%WRITE_LOOP\n"
 
         "LABEL %%WRITE_RETURN\n"
-        "RETURN\n"
-    );
+        "RETURN\n");
 
     // floatval()
     printf(
@@ -554,8 +570,7 @@ void generateBuiltInFunctions(){
 
         "LABEL %%FLOATVAL_END\n"
         "PUSHS GF@%%RAX\n"
-        "RETURN\n"
-    );
+        "RETURN\n");
 
     // intval()
     printf(
@@ -577,8 +592,7 @@ void generateBuiltInFunctions(){
 
         "LABEL %%INTVAL_END\n"
         "PUSHS GF@%%RAX\n"
-        "RETURN\n"
-    );
+        "RETURN\n");
 
     // strval()
     printf(
@@ -596,8 +610,7 @@ void generateBuiltInFunctions(){
 
         "LABEL %%STRVAL_END\n"
         "PUSHS GF@%%RAX\n"
-        "RETURN\n"
-    );
+        "RETURN\n");
 
     // strlen()
     printf(
@@ -605,8 +618,7 @@ void generateBuiltInFunctions(){
         "POPS GF@%%RAX\n"
         "STRLEN GF@%%RAX GF@%%RAX\n"
         "PUSHS GF@%%RAX\n"
-        "RETURN\n"
-    );
+        "RETURN\n");
 
     // TODO create frames for these builtin functions
 
@@ -634,7 +646,7 @@ void generateBuiltInFunctions(){
         "GT GF@%%RBX LF@$i LF@$j\n"
         "JUMPIFEQ %%SUBSTR_ERROR GF@%%RBX bool@true\n"
 
-        //check if $i >= strlen($s)
+        // check if $i >= strlen($s)
         "STRLEN GF@%%RAX LF@$s\n"
         "PUSHS LF@$i\n"
         "PUSHS GF@%%RAX\n"
@@ -653,7 +665,6 @@ void generateBuiltInFunctions(){
         "PUSHS bool@true\n"
         "JUMPIFEQS %%SUBSTR_ERROR\n"
 
-
         // move empty string to RAX
         "MOVE GF@%%RAX string@\n"
 
@@ -665,7 +676,7 @@ void generateBuiltInFunctions(){
         "GETCHAR GF@%%RBX LF@$s LF@$i\n"
         "CONCAT GF@%%RAX GF@%%RAX GF@%%RBX\n"
         "ADD LF@$i LF@$i int@1\n"
-        "JUMP %%SUBSTR_LOOP\n"        
+        "JUMP %%SUBSTR_LOOP\n"
 
         // push result and return
         "LABEL %%SUBSTR_LOOP_END\n"
@@ -695,8 +706,7 @@ void generateBuiltInFunctions(){
 
         "LABEL %%ORD_EMPTY\n"
         "PUSHS int@0\n"
-        "RETURN\n"
-    );
+        "RETURN\n");
 
     // chr()
 
@@ -706,6 +716,5 @@ void generateBuiltInFunctions(){
 
         "INT2CHAR GF@%%RAX GF@%%RBX\n"
         "PUSHS GF@%%RAX\n"
-        "RETURN\n"
-    );    
+        "RETURN\n");
 }
