@@ -31,9 +31,9 @@ terminalType lexEnumToTerminalEnum(Lex lex){
         case GREATER_EQUAL:
             return GEQ;
         case LESS:
-            return LEQ;
-        case LESS_EQUAL:
             return L;
+        case LESS_EQUAL:
+            return LEQ;
         case NOT_EQUAL:
             return NEQ;
         case CONCAT:
@@ -575,6 +575,7 @@ bool parse_file(FILE* file) {
         token = *new;
         tokListAppend(list, new);
     } while (token.lex != END);
+    debug_print_tokens(list);
     ht_init(&symtable);
     return recursiveDescent(list);
 }
