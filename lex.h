@@ -14,12 +14,10 @@
 
 /**
  * @brief enum definition for lexeme types
- * 
  */
 typedef enum Lex{
-    // USEFULL LEXES
-    END            = 0,   // EOF (becuase the parser should probably know)
-    SCRIPT_START   = 1,   // <? TODO does this also need to include the "php"?
+    END            = 0,   // EOF
+    SCRIPT_START   = 1,   // <?php
     SCRIPT_STOP    = 2,   // ?>
     STRING_LIT     = 3,   // "bruh"
     INT_LIT        = 4,   // 10
@@ -45,7 +43,7 @@ typedef enum Lex{
     COMMA          = 24,  // ,
     QUESTION_MARK  = 25,  // ?
     CONCAT         = 26,  // .
-    NOT_EQUAL      = 27,  // !===
+    NOT_EQUAL      = 27,  // !==
     COLON          = 28,  // :
 } Lex;
 

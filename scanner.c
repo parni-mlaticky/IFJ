@@ -680,7 +680,7 @@ Token scan_next_token(FILE *file, bool expect_prolog)
         free(temp);
     }
     else {
-        token.string = str.len ? charListToString(&str) : NULL;
+        token.string = charListToString(&str);
     }
 
     return token;

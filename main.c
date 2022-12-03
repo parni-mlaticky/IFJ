@@ -2,10 +2,7 @@
 #include <stdlib.h>
 #include "parser.h"
 
-int main(int argc, char** argv) {
-    (void) argc;
-    (void) argv;
-
+int main() {
     FILE* source_file = stdin;
 
     generateStarterAsm();
