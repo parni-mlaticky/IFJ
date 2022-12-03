@@ -24,6 +24,16 @@ void generateStarterAsm() {
     printf("LABEL %%PROG_START\n");
 }
 
+
+void defineFunctionVars(ht_table_t symtable){
+    for(int i = 0; i < MAX_HT_SIZE; i++){
+        if(symtable[i]){
+            if(symtable[i]->value->type == VARIABLE){
+                printf("DEFVAR LF@%s\n", symtable[i]->value->v->name);
+            }
+        }
+    }
+}
 /**
  * Expects (top to bottom) var of unknown type and string containing type name.
  * Pops only type string.

@@ -7,6 +7,70 @@ const char* keywords[] = { "if", "else", "declare", "function",
                            "string", "null", "return"};
 
 
+
+void addFuncToSymtable(char* name, varList* argList, bool nullable, dataType returnType){
+    symtableElem* functionElem = malloc(sizeof(symtableElem));
+    function* func = malloc(sizeof(function));
+    func->functionName = name;
+    func->args = argList;
+    func->localTable = NULL;
+    func->nullable = nullable;
+    func->returnType = returnType;
+    functionElem->type = FUNCTION;
+    functionElem->f = func;
+    ht_insert(&symtable, name, functionElem);
+}
+
+void addBuiltinFunctionsToSymtable(){
+    // reads(), readi(), readf()
+    varList* argList = malloc(sizeof(varList));
+    varListInit(argList);
+    addFuncToSymtable("reads", argList, true, STRING);
+    addFuncToSymtable("readi", argList, true, INT);
+    addFuncToSymtable("readf", argList, true, FLOAT);
+
+    // write()
+    addFuncToSymtable("write", NULL, true, NULL_T);
+
+    // floatval(), intval(), strval()
+    argList = malloc(sizeof(varList));
+    varListInit(argList);
+    variable term = {.dType = UNKNOWN, .name = "term", .nullable = true};
+    varListAppend(argList, term);
+    addFuncToSymtable("floatval", argList, false, FLOAT);
+    addFuncToSymtable("intval", argList, false, INT);
+    addFuncToSymtable("strval", argList, false, STRING);
+
+    // strlen()
+    argList = malloc(sizeof(varList));
+    varListInit(argList);
+    variable string = {.dType = STRING, .name = "s", .nullable = false};
+    varListAppend(argList, string);
+    addFuncToSymtable("strlen", argList, false, INT);
+
+    // substring()
+    argList = malloc(sizeof(varList));
+    varListInit(argList);
+    varListAppend(argList, string);
+    variable i = {.dType = INT, .name = "i", .nullable = false};
+    variable j = {.dType = INT, .name = "j", .nullable = false};
+    varListAppend(argList, i);
+    varListAppend(argList, j);
+    addFuncToSymtable("substring", argList, true, STRING);
+
+    // ord()
+    argList = malloc(sizeof(varList));
+    varListInit(argList);
+    varListAppend(argList, string);
+    addFuncToSymtable("ord", argList, false, INT);
+
+    // chr()
+    argList = malloc(sizeof(varList));
+    varListInit(argList);
+    varListAppend(argList, i);
+    addFuncToSymtable("chr", argList, false, STRING);
+}
+
 bool firstPass(tokList* tl){
     bool fPass = true;
     tokListFirst(tl);
@@ -440,7 +504,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
         }
 
         top = getTopTerminal(&s);
-        if(isRelOperator(lexEnumToTerminalEnum(token->lex)) && relOpInExp) syntaxError(token, "precParser isRelOperator error");
+        if(isRelOperator(lexEnumToTerminalEnum(token->lex)) && relOpInExp) semanticError(7);
         opPrecedence prec = getPrecedence(top->data.terminal->tType, token->lex);
         if(prec == P_LESS){
             stackInsertHandle(&s);
@@ -549,10 +613,19 @@ bool parse_file(FILE* file) {
     debug_print_tokens(list);
     ht_init(&symtable);
     generateStarterAsm();
+    addBuiltinFunctionsToSymtable();
     result = firstPass(list);
     printf("LABEL %%PROG_START\n");
+    printf("CALL %%MAIN_VAR_DEFS\n");
     tokListFirst(list);
-    return result && recursiveDescent(list);
+    result = result && recursiveDescent(list);
+
+    printf("EXIT int@0\n");
+    printf("LABEL %%MAIN_VAR_DEFS\n");
+    defineFunctionVars(symtable);
+    printf("RETURN\n");
+
+    return result;
 }
 
 
@@ -676,8 +749,9 @@ bool blockSTExpansion(tokList* tl, function* func){
         processPossibleVariableDefinition(expTree, localSymtable);
 
         t = getNextToken(tl);
-        blockSt = blockSt && compareLexTypes(t, SEMICOLON);
         generateExpressionCode(expTree, false, &symtable);
+        blockSt = blockSt && compareLexTypes(t, SEMICOLON);
+        printf("POPS GF@%%RAX\n");
     }
     else if(compareLexTypes(t, FUN_ID)){
         if(compareTerminalStrings(t, "if")) blockSt = ifStExpansion(tl, func);
@@ -689,8 +763,9 @@ bool blockSTExpansion(tokList* tl, function* func){
             blockSt = precParser(tl, &expTree);
             processPossibleVariableDefinition(expTree, localSymtable);
             t = getNextToken(tl);
-            blockSt = blockSt && compareLexTypes(t, SEMICOLON);
             generateExpressionCode(expTree, false, localSymtable);
+            blockSt = blockSt && compareLexTypes(t, SEMICOLON);
+            printf("POPS GF@%%RAX\n");
         }    
     }
     else {
@@ -698,8 +773,9 @@ bool blockSTExpansion(tokList* tl, function* func){
         blockSt = precParser(tl, &expTree);
         processPossibleVariableDefinition(expTree, localSymtable);
         t = getNextToken(tl);
-        blockSt = blockSt && compareLexTypes(t, SEMICOLON);
         generateExpressionCode(expTree, false, &symtable);
+        blockSt = blockSt && compareLexTypes(t, SEMICOLON);
+        printf("POPS GF@%%RAX\n");
     }
     return blockSt;
 }
@@ -714,11 +790,14 @@ void processPossibleVariableDefinition(Nonterminal* expTree, ht_table_t* symtabl
     processPossibleVariableDefinition(expTree->expr.right, symtable);
     // Variable assignment found
     Nonterminal* var = expTree->expr.left;
-
+    
     // Check if variable was already added into the table
     symtableElem* elem = ht_get(symtable, var->term.var->name);
+
+    //varList* definedVars = malloc(sizeof(varList));
+    //varListInit(definedVars);
     if (elem == NULL) {
-        printf("DEFVAR LF@%s\n", var->term.var->name);
+        // CREATING VAR LIST FOR DEFINING AT THE END OF THE FUNCTION
         elem = malloc(sizeof(symtableElem));
         elem->type = VARIABLE;
         elem->v    = variable_clone(var->term.var);
@@ -727,6 +806,7 @@ void processPossibleVariableDefinition(Nonterminal* expTree, ht_table_t* symtabl
     else {
         elem->v->dType = var->dType;
     }
+    //vars = definedVars;
 }
 
 bool STExpansion(tokList* tl){
@@ -737,8 +817,9 @@ bool STExpansion(tokList* tl){
         St = precParser(tl, &expTree);
         processPossibleVariableDefinition(expTree, &symtable);
         t = getNextToken(tl);
-        St = St && compareLexTypes(t, SEMICOLON);
         generateExpressionCode(expTree, false, &symtable);
+        St = St && compareLexTypes(t, SEMICOLON);
+        printf("POPS GF@%%RAX\n");
     }
     else if(compareLexTypes(t, FUN_ID)){
         if(compareTerminalStrings(t, "function")) St = functionDefStExpansion(tl, false);
@@ -750,8 +831,9 @@ bool STExpansion(tokList* tl){
             St = precParser(tl, &expTree);
             processPossibleVariableDefinition(expTree, &symtable);
             t = getNextToken(tl);
-            St = St && compareLexTypes(t, SEMICOLON);
             generateExpressionCode(expTree, false, &symtable);
+            St = St && compareLexTypes(t, SEMICOLON);
+            printf("POPS GF@%%RAX\n");
         }     
     }
 
@@ -760,8 +842,9 @@ bool STExpansion(tokList* tl){
         St = precParser(tl, &expTree);
         processPossibleVariableDefinition(expTree, &symtable);
         t = getNextToken(tl);
-        St = St && compareLexTypes(t, SEMICOLON);
         generateExpressionCode(expTree, false, &symtable);
+        St = St && compareLexTypes(t, SEMICOLON);
+        printf("POPS GF@%%RAX\n");
     }    
     return St;
 }
@@ -816,16 +899,43 @@ bool functionDefStExpansion(tokList* tl, bool firstPass){
     t = getNextToken(tl);
     fDefSt = fDefSt && compareLexTypes(t, PAR_L);
     fDefSt = fDefSt && paramsExpansion(tl, funcArgs);
+
+    // FIXME this part can go into a separate function
+    // (it dumps the argument variables into the local symtable)
+    symtableElem* var;
+    varListFirst(funkce->args);
+    variable iter;
+    while(funkce->args->active){ // FIXME LIST ISACTIVE METHOD!!!
+        iter = varListGetValue(funkce->args);
+        if(!iter.name){
+            syntaxError(NULL, "error in params in function declaration");
+        }
+        var = ht_get(funkce->localTable, iter.name);
+        if(var) semanticError(8);
+        var = malloc(sizeof(symtableElem));
+        var->type = VARIABLE;
+        var->v = variable_clone(&iter);
+        ht_insert(funkce->localTable, iter.name, var);
+        varListNext(funkce->args);
+    }
+
     t = getNextToken(tl);
     fDefSt = fDefSt && compareLexTypes(t, PAR_R);
     t = getNextToken(tl);
 
     printf("LABEL _%s\n", funkce->functionName);
-    fDefSt = fDefSt && compareLexTypes(t, COLON) && typeExpansion(tl, &funkce->returnType, &funkce->nullable, true) && blockExpansion(tl, funkce);
-
+    fDefSt = fDefSt && compareLexTypes(t, COLON) && typeExpansion(tl, &funkce->returnType, &funkce->nullable, true);
     if(ht_get(&symtable, funkce->functionName)) semanticError(3);
     ht_insert(&symtable, funkce->functionName, functionElem);
+    printf("CALL _%s_VAR_DEFS\n", funkce->functionName);
 
+    fDefSt = fDefSt && blockExpansion(tl, funkce);
+    if(funkce->returnType != NULL_T){
+        printf("EXIT int@4\n"); // FIXME this should be a special label that we will jump to i guess
+    }
+    printf("LABEL _%s_VAR_DEFS\n", funkce->functionName);
+    defineFunctionVars(*funkce->localTable);
+    printf("RETURN\n");
     return fDefSt;
 }
 
@@ -928,9 +1038,10 @@ bool returnStExpansion(tokList* tl, function* func){
     processPossibleVariableDefinition(expTree, localSymtable);
     generateExpressionCode(expTree, false, localSymtable);
 
-
     t = getNextToken(tl);
     returnSt = returnSt && compareLexTypes(t, SEMICOLON);
+
+    printf("POPS GF@%%RAX\n");
     return returnSt;
 }
 

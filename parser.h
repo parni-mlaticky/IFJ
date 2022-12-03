@@ -92,6 +92,7 @@ void terminalToDataType(Token* t, dataType* type);
 bool precParser(tokList* tl, Nonterminal** finalNonterm);
 
 Nonterminal* createIntLiteralNonterminal(int value);
+void addBuiltinFunctionsToSymtable();
 
 Nonterminal* createStringLiteralNonterminal(char* string);
 
