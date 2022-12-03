@@ -13,6 +13,14 @@ void generateStarterAsm() {
     generateNormalizeNumericTypesFunction();
     generateNullToIntFunction();
     generateBuiltInFunctions();
+    generateEmptyStringToInt();
+    generateCompareDtypes();
+    generateNonEquality();
+    generateGreatEqual();
+    generateLessEqual();
+    generateEquality();
+    generateGreat();
+    generateLess();
     printf("LABEL %%PROG_START\n");
 }
 
@@ -64,7 +72,6 @@ void generateNullToIntFunction() {
            "PUSHS GF@%%RBX\n"
 
            "LABEL %%NULL_TO_INT_END\n"
-           "BREAK\n"
            "RETURN\n"
     );
 }
@@ -133,6 +140,204 @@ void generateStackSwapFunction() {
     );
 }
 
+void generateCompareDtypes() {
+    printf("LABEL %%COMPARE_DTYPES\n"
+           "POPS GF@%%RAX\n"
+           "POPS GF@%%RBX\n"
+           "PUSHS GF@%%RBX\n"
+           "PUSHS GF@%%RAX\n"
+
+           "TYPE GF@%%RAX GF@%%RAX\n"
+           "TYPE GF@%%RBX GF@%%RBX\n"
+
+           "EQ GF@%%RAX GF@%%RAX GF@%%RBX\n"
+           "PUSHS GF@%%RAX\n"
+           "RETURN\n"
+    );
+}
+
+void generateEquality() {
+    printf("LABEL %%EQUALITY\n"
+           "CALL %%COMPARE_DTYPES\n"
+           "POPS GF@%%RAX\n"
+           "JUMPIFEQ %%EQUALITY-EXIT GF@%%RAX bool@false\n"
+
+           "EQS\n"
+           "RETURN\n"
+
+           "LABEL %%EQUALITY-EXIT\n"
+           "PUSHS bool@false\n"
+           "RETURN\n"
+    );
+}
+
+void generateNonEquality() {
+    printf("LABEL %%NONEQUALITY\n"
+           "CALL %%COMPARE_DTYPES\n"
+           "POPS GF@%%RAX\n"
+           "JUMPIFEQ %%NONEQUALITY-EXIT GF@%%RAX bool@false\n"
+
+           "JUMPIFNEQS %%NONEQUALITY-EXIT\n"
+           "PUSHS bool@false\n"
+           "RETURN\n"
+
+           "LABEL %%NONEQUALITY-TRUE\n"
+           "PUSHS bool@true\n"
+           "RETURN\n"
+
+           "LABEL %%NONEQUALITY-EXIT\n"
+           "PUSHS bool@true\n"
+           "RETURN\n"
+    );
+}
+
+void generateLess() {
+    printf("LABEL %%LESS\n"
+           // Compare with null.
+           "POPS GF@%%RAX\n"
+           "POPS GF@%%RBX\n"
+           "PUSHS GF@%%RBX\n"
+           "PUSHS GF@%%RAX\n"
+           "TYPE GF@%%RAX GF@%%RAX\n"
+           "TYPE GF@%%RBX GF@%%RBX\n"
+           "JUMPIFEQ %%LESS-FALSE GF@%%RAX nil@nil\n"
+           "JUMPIFEQ %%LESS-FALSE GF@%%RBX nil@nil\n"
+           "LTS\n"
+           "RETURN\n"
+
+           "LABEL %%LESS-FALSE\n"
+           "PUSHS bool@false\n"
+           "RETURN\n"
+    );
+}
+
+void generateEmptyStringToInt() {
+    printf("LABEL %%EMPTY_STRINGS_TO_INT\n"
+           "POPS GF@%%RAX\n"
+           "TYPE GF@%%RBX GF@%%RAX\n"
+           "JUMPIFEQ %%EMPTY_STRINGS_TO_INT-STRING GF@%%RBX string@string\n"
+           "PUSHS GF@%%RAX\n"
+           "RETURN\n"
+
+           "LABEL %%EMPTY_STRINGS_TO_INT-STRING\n"
+           "JUMPIFNEQ %%EMPTY_STRINGS_TO_INT-NONEMPTY GF@%%RAX string@\n"
+           "PUSHS int@0\n"
+           "RETURN\n"
+
+           "LABEL %%EMPTY_STRINGS_TO_INT-NONEMPTY\n"
+           "EXIT int@7\n"
+    );
+}
+
+void generateLessEqual() {
+    printf("LABEL %%LESS_EQUAL\n"
+           "CALL %%EMPTY_STRINGS_TO_INT\n"
+           "CALL %%STACK_SWAP\n"
+           "CALL %%EMPTY_STRINGS_TO_INT\n"
+           "CALL %%STACK_SWAP\n"
+           "CALL %%NULL_TO_INT\n"
+           "CALL %%NORMALIZE_NUMERIC_TYPES\n"
+
+           "GTS\n"
+           "POPS GF@%%RAX\n"
+           "JUMPIFEQ %%LESS_EQUAL-FALSE GF@%%RAX bool@false\n"
+           "PUSHS bool@false\n"
+           "RETURN\n"
+
+           "LABEL %%LESS_EQUAL-FALSE\n"
+           "PUSHS bool@true\n"
+           "RETURN\n"
+    );
+}
+
+void generateGreatEqual() {
+    printf("LABEL %%GREAT_EQUAL\n"
+           "CALL %%EMPTY_STRINGS_TO_INT\n"
+           "CALL %%STACK_SWAP\n"
+           "CALL %%EMPTY_STRINGS_TO_INT\n"
+           "CALL %%STACK_SWAP\n"
+           "CALL %%NULL_TO_INT\n"
+           "CALL %%NORMALIZE_NUMERIC_TYPES\n"
+
+           "LTS\n"
+           "POPS GF@%%RAX\n"
+           "JUMPIFEQ %%GREAT_EQUAL-FALSE GF@%%RAX bool@false\n"
+           "PUSHS bool@false\n"
+           "RETURN\n"
+
+           "LABEL %%GREAT_EQUAL-FALSE\n"
+           "PUSHS bool@true\n"
+           "RETURN\n"
+    );
+}
+
+void generateGreat() {
+    printf("LABEL %%GREAT\n"
+           // Compare with null.
+           "POPS GF@%%RAX\n"
+           "POPS GF@%%RBX\n"
+           "PUSHS GF@%%RBX\n"
+           "PUSHS GF@%%RAX\n"
+           "TYPE GF@%%RAX GF@%%RAX\n"
+           "TYPE GF@%%RBX GF@%%RBX\n"
+           "JUMPIFEQ %%GREAT-FALSE GF@%%RAX nil@nil\n"
+           "JUMPIFEQ %%GREAT-FALSE GF@%%RBX nil@nil\n"
+           "GTS\n"
+           "RETURN\n"
+
+           "LABEL %%GREAT-FALSE\n"
+           "PUSHS bool@false\n"
+           "RETURN\n"
+    );
+}
+
+void generateToBoolFunction(){
+    printf(
+        // Pops the top of the stack into RAX and checks what type it is
+        "LABEL %%TO_BOOL\n"
+        "POPS GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RAX\n"
+        "JUMPIFEQ %%BOOL GF@%%RBX string@bool\n"
+        "JUMPIFEQ %%STRING GF@%%RBX string@string\n"
+        "JUMPIFEQ %%INT GF@%%RBX string@int\n"
+        "JUMPIFEQ %%FLOAT GF@%%RBX string@float\n"
+
+        // If the type is bool, nothing needs to be converted, so just push back the original value
+        "LABEL %%BOOL\n"
+        "PUSHS GF@%%RAX\n"
+        "JUMP %%RET_BOOL\n"
+        "RETURN\n"
+
+        // If the type is string and the content is "0", push false as the return value
+        // Otherwise push true
+        "LABEL %%STRING\n"
+        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX string@0\n"
+        "PUSHS bool@true\n"
+        "JUMP %%RET_BOOL\n"
+
+        // If the type is and the content is 0, push false as the return value
+        // Otherwise push true
+        "LABEL %%INT\n"
+        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX int@0\n"
+        "PUSHS bool@true\n"
+        "JUMP %%RET_BOOL\n"
+
+        "LABEL %%FLOAT\n"
+        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX float@0x0.0p+0\n"
+        "PUSHS bool@true\n"
+        "JUMP %%RET_BOOL\n"
+
+        "LABEL %%VALUE_IS_FALSE\n"
+        "PUSHS bool@false\n"
+
+        "LABEL %%RET_BOOL\n"
+        "RETURN\n"
+        );
+}
+
+void convertExpResultToBoolValue(){
+    printf("CALL %%TO_BOOL\n");
+}
 
 void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
     // NAJIT NEJPRAVJEJSI LIST
@@ -198,9 +403,6 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
             case MINUS:
                 printf("CALL %%NORMALIZE_NUMERIC_TYPES\n"
                        "SUBS\n"
-                       "POPS GF@%%RAX\n"
-                       "PUSHS GF@%%RAX\n"
-                       "WRITE GF@%%RAX\n"
                 );
                 break;
 
@@ -234,6 +436,30 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
 
                 break;
 
+            case EQ:
+                printf("CALL %%EQUALITY\n");
+                break;
+
+            case NEQ:
+                printf("CALL %%NONEQUALITY\n");
+                break;
+
+            case L:
+                printf("CALL %%LESS\n");
+                break;
+
+            case LEQ:
+                printf("CALL %%LESS_EQUAL\n");
+                break;
+
+            case G:
+                printf("CALL %%GREAT\n");
+                break;
+
+            case GEQ:
+                printf("CALL %%GREAT_EQUAL\n");
+                break;
+
             case AS:
                 printf("DEFVAR LF@$%s\n", root->expr.left->term.var->name);
                 printf("POPS LF@$%s\n", root->expr.left->term.var->name);
@@ -243,55 +469,6 @@ void generateExpressionCode(Nonterminal* root, bool isLeftSideOfAssignment){
             default: break;    
         }
     }
-}
-
-void generateToBoolFunction(){
-    printf(
-        // Pops the top of the stack into RAX and checks what type it is
-        "LABEL %%TO_BOOL\n"
-        "POPS GF@%%RAX\n"
-        "TYPE GF@%%RBX GF@%%RAX\n"
-        "JUMPIFEQ %%BOOL GF@%%RBX string@bool\n"
-        "JUMPIFEQ %%STRING GF@%%RBX string@string\n"
-        "JUMPIFEQ %%INT GF@%%RBX string@int\n"
-        "JUMPIFEQ %%FLOAT GF@%%RBX string@float\n"
-
-        // If the type is bool, nothing needs to be converted, so just push back the original value
-        "LABEL %%BOOL\n"
-        "PUSHS GF@%%RAX\n"
-        "JUMP %%RET_BOOL\n"
-        "RETURN\n"
-
-        // If the type is string and the content is "0", push false as the return value
-        // Otherwise push true
-        "LABEL %%STRING\n"
-        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX string@0\n"
-        "PUSHS bool@true\n"
-        "JUMP %%RET_BOOL\n"
-
-        // If the type is and the content is 0, push false as the return value
-        // Otherwise push true
-        "LABEL %%INT\n"
-        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX int@0\n"
-        "PUSHS bool@true\n"
-        "JUMP %%RET_BOOL\n"
-
-        "LABEL %%FLOAT\n"
-        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX float@0x0.0p+0\n"
-        "PUSHS bool@true\n"
-        "JUMP %%RET_BOOL\n"
-
-        "LABEL %%VALUE_IS_FALSE\n"
-        "PUSHS bool@false\n"
-
-        "LABEL %%RET_BOOL\n"
-        "RETURN\n"
-        );
-}
-
-
-void convertExpResultToBoolValue(){
-    printf("CALL %%TO_BOOL\n");
 }
 
 
@@ -515,4 +692,3 @@ void generateBuiltInFunctions(){
         "RETURN\n"
     );    
 }
-
