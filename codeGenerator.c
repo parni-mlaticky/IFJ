@@ -375,10 +375,11 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                     case FLOAT:
                         printf("PUSHS float@%a\n", root->term.floatLit);
                         break;
-                    case STRING:;
+                    case STRING:
+                        ;
                         int newSize = countEscapeSequences(root->term.stringLit) * 5 * sizeof(char);
-                        char *newString = malloc(strlen(root->term.stringLit) * sizeof(char) + newSize);
-                        char buffer[7];
+                        char *newString = calloc(strlen(root->term.stringLit) * sizeof(char) + newSize + 4*sizeof(char), 1);
+                        char buffer[7] = {'\0', };
                         for (size_t i = 0; root->term.stringLit[i] != '\0'; i++) {
                             if ((root->term.stringLit[i] >= 0 && root->term.stringLit[i] <= 32) || root->term.stringLit[i] == 35 || root->term.stringLit[i] == 92) {
                                 sprintf(buffer, "\\0%d", root->term.stringLit[i]);
@@ -409,7 +410,15 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                 symtableElem *func = ht_get(symtable, root->term.func->funId);
                 if (!func)
                     semanticError(3);
+                
+                // TODO do function calls and finally finish this piece of shit
+                if(!root->term.func->args){
+                    return;
+                }
                 nontermListLast(root->term.func->args);
+                if(!root->term.func->args->active){
+                    return;
+                }
                 Nonterminal *nt;
                 for (int i = 0; i < root->term.func->args->len; i++) {
                     nt = nontermListGetValue(root->term.func->args);
