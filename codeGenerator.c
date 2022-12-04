@@ -483,7 +483,6 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                         }
                     }
                     
-                    
                     printf("CREATEFRAME\n");
                     printf("PUSHFRAME\n");
                     printf("CALL _%s\n", root->term.func->funId);
@@ -620,12 +619,21 @@ void generateBuiltInFunctions() {
     printf(
         "LABEL _readi\n"
         "READ GF@%%RAX int\n"
+        "TYPE GF@%%RBX GF@%%RAX\n"
+        "JUMPIFEQ %%READI_RET GF@%%RBX string@int\n"
+        "MOVE GF@%%RAX nil@nil\n"
+        "LABEL %%READI_RET\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n");
     // readf() READ FLOAT
     printf(
         "LABEL _readf\n"
         "READ GF@%%RAX float\n"
+        "TYPE GF@%%RBX GF@%%RAX\n"
+        "JUMPIFEQ %%READI_RET GF@%%RBX string@float\n"
+        "MOVE GF@%%RAX nil@nil\n"
+
+        "LABEL %%READF_RET\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n");
 
@@ -715,8 +723,15 @@ void generateBuiltInFunctions() {
     // strlen()
     printf(
         "LABEL _strlen\n"
-        "POPS GF@%%RAX\n"
-        "STRLEN GF@%%RAX GF@%%RAX\n"
+        "DEFVAR LF@$s\n"
+        "POPS LF@$s\n"
+        "PUSHS LF@$s\n"
+        "PUSHS string@string\n"
+        "CALL %%CHECK_IF_IS_TYPE_OR_NULL\n"
+        "PUSHS bool@false\n"
+        "JUMPIFEQS %%ERROR_4\n"
+
+        "STRLEN GF@%%RAX LF@$s\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n");
 
@@ -730,9 +745,31 @@ void generateBuiltInFunctions() {
         "DEFVAR LF@$s\n"
 
         // Pop args from stack
-        "POPS LF@$s\n"
-        "POPS LF@$i\n"
         "POPS LF@$j\n"
+        "POPS LF@$i\n"
+        "POPS LF@$s\n"
+
+        // check types
+        "PUSHS LF@$s\n"
+        "PUSHS string@string\n"
+        "CALL %%CHECK_IF_IS_TYPE\n"
+        "PUSHS bool@false\n"
+        "JUMPIFEQS %%ERROR_4\n"
+        
+
+        "PUSHS LF@$i\n"
+        "PUSHS string@int\n"
+        "CALL %%CHECK_IF_IS_TYPE\n"
+        "PUSHS bool@false\n"
+        "JUMPIFEQS %%ERROR_4\n"
+
+        "PUSHS LF@$j\n"
+        "PUSHS string@int\n"
+        "CALL %%CHECK_IF_IS_TYPE\n"
+        "PUSHS bool@false\n"
+        "JUMPIFEQS %%EXIT_4\n"
+
+
 
         // check if $i < 0
         "LT GF@%%RBX LF@$i int@0\n"
@@ -793,14 +830,21 @@ void generateBuiltInFunctions() {
     // ord()
     printf(
         "LABEL _ord\n"
-        "POPS GF@%%RBX\n"
+        "DEFVAR LF@s\n"
+        "POPS LF@s\n"
 
-        "STRLEN GF@%%RAX GF@%%RBX\n"
+        "PUSHS LF@s\n"
+        "PUSHS string@string\n"
+        "CALL %%CHECK_IF_IS_TYPE\n"
+        "PUSHS bool@false\n"
+        "JUMPIFEQS %%ERROR_4\n"
+
+        "STRLEN GF@%%RAX LF@s\n"
         "PUSHS GF@%%RAX\n"
         "PUSHS int@0\n"
         "JUMPIFEQS %%ORD_EMPTY\n"
 
-        "STRI2INT GF@%%RAX GF@%%RBX int@0\n"
+        "STRI2INT GF@%%RAX LF@s int@0\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n"
 
@@ -812,8 +856,15 @@ void generateBuiltInFunctions() {
 
     printf(
         "LABEL _chr\n"
-        "POPS GF@%%RBX\n"
-        "INT2CHAR GF@%%RAX GF@%%RBX\n"
+        "DEFVAR LF@i\n"
+        "POPS LF@i\n"
+
+        "PUSHS LF@i\n"
+        "PUSHS string@int\n"
+        "CALL %%CHECK_IF_IS_TYPE\n"
+        "PUSHS bool@false\n"
+        "JUMPIFEQS %%ERROR_4\n"
+        "INT2CHAR GF@%%RAX LF@i\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n");
 }
