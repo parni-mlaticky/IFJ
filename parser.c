@@ -8,12 +8,12 @@ const char* keywords[] = { "if", "else", "declare", "function",
 
 
 
-void addFuncToSymtable(char* name, varList* argList, bool nullable, dataType returnType){
+void addFuncToSymtable(char* name, varList* argList, bool nullable, dataType returnType, ht_table_t* localTable){
     symtableElem* functionElem = malloc(sizeof(symtableElem));
     function* func = malloc(sizeof(function));
     func->functionName = name;
     func->args = argList;
-    func->localTable = NULL;
+    func->localTable = localTable;
     func->nullable = nullable;
     func->returnType = returnType;
     functionElem->type = FUNCTION;
@@ -25,28 +25,28 @@ void addBuiltinFunctionsToSymtable(){
     // reads(), readi(), readf()
     varList* argList = malloc(sizeof(varList));
     varListInit(argList);
-    addFuncToSymtable("reads", argList, true, STRING);
-    addFuncToSymtable("readi", argList, true, INT);
-    addFuncToSymtable("readf", argList, true, FLOAT);
+    addFuncToSymtable("reads", argList, true, STRING, NULL);
+    addFuncToSymtable("readi", argList, true, INT, NULL);
+    addFuncToSymtable("readf", argList, true, FLOAT, NULL);
 
     // write()
-    addFuncToSymtable("write", NULL, true, NULL_T);
+    addFuncToSymtable("write", NULL, true, NULL_T, NULL);
 
     // floatval(), intval(), strval()
     argList = malloc(sizeof(varList));
     varListInit(argList);
     variable term = {.dType = UNKNOWN, .name = "term", .nullable = true};
     varListAppend(argList, term);
-    addFuncToSymtable("floatval", argList, false, FLOAT);
-    addFuncToSymtable("intval", argList, false, INT);
-    addFuncToSymtable("strval", argList, false, STRING);
+    addFuncToSymtable("floatval", argList, false, FLOAT, NULL);
+    addFuncToSymtable("intval", argList, false, INT, NULL);
+    addFuncToSymtable("strval", argList, false, STRING, NULL);
 
     // strlen()
     argList = malloc(sizeof(varList));
     varListInit(argList);
     variable string = {.dType = STRING, .name = "s", .nullable = false};
     varListAppend(argList, string);
-    addFuncToSymtable("strlen", argList, false, INT);
+    addFuncToSymtable("strlen", argList, false, INT, NULL);
 
     // substring()
     argList = malloc(sizeof(varList));
@@ -56,23 +56,30 @@ void addBuiltinFunctionsToSymtable(){
     variable j = {.dType = INT, .name = "j", .nullable = false};
     varListAppend(argList, i);
     varListAppend(argList, j);
-    addFuncToSymtable("substring", argList, true, STRING);
+    addFuncToSymtable("substring", argList, true, STRING, NULL);
 
     // ord()
     argList = malloc(sizeof(varList));
     varListInit(argList);
     varListAppend(argList, string);
-    addFuncToSymtable("ord", argList, false, INT);
+    addFuncToSymtable("ord", argList, false, INT, NULL);
 
     // chr()
     argList = malloc(sizeof(varList));
     varListInit(argList);
     varListAppend(argList, i);
-    addFuncToSymtable("chr", argList, false, STRING);
+    addFuncToSymtable("chr", argList, false, STRING, NULL);
 }
 
+// ONE BIG FIXME
 bool firstPass(tokList* tl){
-    bool fPass = true;
+    char* funcName = NULL;
+    bool fPass = false;
+    dataType returnType;
+    bool nullable;
+    varList* args;
+    ht_table_t* localTable;
+    symtableElem* var;
     tokListFirst(tl);
     Token* t = tokListGetValue(tl);
     while(!compareLexTypes(t, END) && !compareLexTypes(t, SCRIPT_STOP)){
@@ -81,8 +88,55 @@ bool firstPass(tokList* tl){
             t = getNextToken(tl);
         }
         if(compareLexTypes(t, END) || compareLexTypes(t, SCRIPT_STOP)) break;
-        tokListPrev(tl);
-        fPass = functionDefStExpansion(tl, true);
+
+        args = malloc(sizeof(varList));
+        varListInit(args);
+        fPass = compareTerminalStrings(t, "function");
+        t = getNextToken(tl);
+        fPass = fPass && compareLexTypes(t, FUN_ID) && !isKeyword(t);
+        funcName = t->string;
+        t = getNextToken(tl);
+        fPass = fPass && compareLexTypes(t, PAR_L);
+        fPass = fPass && paramsExpansion(tl, args);
+        t = getNextToken(tl);
+        fPass = fPass && compareLexTypes(t, PAR_R);
+        t = getNextToken(tl);
+        fPass = fPass && compareLexTypes(t, COLON) && typeExpansion(tl, &returnType, &nullable, true);
+        if(ht_get(&symtable, funcName)) semanticError(3);
+
+    localTable = malloc(sizeof(ht_table_t));
+    varListFirst(args);
+    variable varIter;
+    while(args->active){ // FIXME LIST ISACTIVE METHOD!!!
+        varIter = varListGetValue(args);
+        if(!varIter.name){
+            syntaxError(NULL, "error in params in function declaration");
+        }
+        var = ht_get(localTable, varIter.name);
+        if(var) semanticError(8);
+        var = malloc(sizeof(symtableElem));
+        var->type = VARIABLE;
+        var->v = variable_clone(&varIter);
+        ht_insert(localTable, varIter.name, var);
+        varListNext(args);
+    }
+        addFuncToSymtable(funcName, args, nullable, returnType, localTable);
+
+        Token* iter = getNextToken(tl);
+        int count = 0;
+        while(!compareLexTypes(iter, CBR_L)){
+            iter = getNextToken(tl);
+        }
+        count++;
+        while(count > 0){
+            iter = getNextToken(tl);
+            if(compareLexTypes(iter, CBR_L)){
+                count++;
+            }
+            else if(compareLexTypes(iter, CBR_R)){
+                count--;
+            }
+        }
         t = getNextToken(tl);
     }    
     return fPass;
@@ -864,81 +918,16 @@ bool endTokenExpansion(tokList* tl){
     return end;
 }
 
-bool functionDefStExpansion(tokList* tl, bool firstPass){
-    // FIXME if first pass, dat do tabulky symbolu zaznam o funkci a preskocit funkzi
-    // if !first pass, projit telo funkce a vygenerovat kod
-    if(firstPass){
-        Token* iter = getNextToken(tl);
-        int count = 0;
-        while(!compareLexTypes(iter, CBR_L)){
-            iter = getNextToken(tl);
-        }
-        count++;
-        while(count > 0){
-            iter = getNextToken(tl);
-            if(compareLexTypes(iter, CBR_L)){
-                count++;
-            }
-            else if(compareLexTypes(iter, CBR_R)){
-                count--;
-            }
-        }
-        return true;
-    }
-    symtableElem* functionElem = malloc(sizeof(symtableElem));
-    functionElem->type = FUNCTION;
-    
-    function* funkce = malloc(sizeof(function));
-    functionElem->f = funkce;
-
-    varList* funcArgs = malloc(sizeof(varList));
-    varListInit(funcArgs);
-
-    funkce->args = funcArgs;
-
-    functionElem->f->localTable = malloc(sizeof(ht_table_t));
-    ht_init(functionElem->f->localTable);
-
+bool functionDefStExpansion(tokList* tl, bool isFirstPass){
     bool fDefSt = false;
+    char* funcName = NULL;
+    getNextToken(tl);
     Token* t = getNextToken(tl);
-    fDefSt = compareTerminalStrings(t, "function");
-    t = getNextToken(tl);
-    fDefSt = fDefSt && compareLexTypes(t, FUN_ID) && !isKeyword(t);
-    // fprintf(stderr, "EXPANDING FUNCTION WITH NAME: %s\n", t->string);
-    funkce->functionName = t->string;
-    t = getNextToken(tl);
-    fDefSt = fDefSt && compareLexTypes(t, PAR_L);
-    fDefSt = fDefSt && paramsExpansion(tl, funcArgs);
-
-    // FIXME this part can go into a separate function
-    // (it dumps the argument variables into the local symtable)
-    symtableElem* var;
-    varListFirst(funkce->args);
-    variable iter;
-    while(funkce->args->active){ // FIXME LIST ISACTIVE METHOD!!!
-        iter = varListGetValue(funkce->args);
-        if(!iter.name){
-            syntaxError(NULL, "error in params in function declaration");
-        }
-        var = ht_get(funkce->localTable, iter.name);
-        if(var) semanticError(8);
-        var = malloc(sizeof(symtableElem));
-        var->type = VARIABLE;
-        var->v = variable_clone(&iter);
-        ht_insert(funkce->localTable, iter.name, var);
-        varListNext(funkce->args);
-    }
-
-    t = getNextToken(tl);
-    fDefSt = fDefSt && compareLexTypes(t, PAR_R);
-    t = getNextToken(tl);
-
-    printf("JUMP _%s_FUNC_END\n", funkce->functionName);
-    printf("LABEL _%s\n", funkce->functionName);
-    fDefSt = fDefSt && compareLexTypes(t, COLON) && typeExpansion(tl, &funkce->returnType, &funkce->nullable, true);
-    if(ht_get(&symtable, funkce->functionName)) semanticError(3);
-    ht_insert(&symtable, funkce->functionName, functionElem);
-    printf("CALL _%s_VAR_DEFS\n", funkce->functionName);
+    funcName = t->string;
+    printf("JUMP _%s_FUNC_END\n", funcName);
+    printf("LABEL _%s\n", funcName);
+    printf("CALL _%s_VAR_DEFS\n", funcName);
+    function* funkce = ht_get(&symtable, funcName)->f;
     varListFirst(funkce->args);
     variable argsIter;
     for(int i = 0; i < funkce->args->len; i++){
@@ -957,7 +946,11 @@ bool functionDefStExpansion(tokList* tl, bool firstPass){
         varListNext(funkce->args);
     }
 
-    fDefSt = fDefSt && blockExpansion(tl, funkce);
+    while(tl->active->data->lex != CBR_L){
+        getNextToken(tl);
+    }
+
+    fDefSt = blockExpansion(tl, funkce);
     if(funkce->returnType != NULL_T){
         printf("JUMP %%ERROR_6\n"); // FIXME this should be a special label that we will jump to i guess
     }

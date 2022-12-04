@@ -456,7 +456,7 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                 // profit??
                 ;
                 symtableElem *func = ht_get(globalSymtable, root->term.func->funId);
-                // Function doesnt exit
+                // Function doesnt exist
                 if (!func) semanticError(3);
 
                 // Function has the correct number of arguments OR it can have N arguments (write() for example)
