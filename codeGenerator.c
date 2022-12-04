@@ -365,6 +365,7 @@ void generateToBoolFunction() {
         // Otherwise push true
         "LABEL %%STRING\n"
         "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX string@0\n"
+        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RAX string@\n"
         "PUSHS bool@true\n"
         "JUMP %%RET_BOOL\n"
 
