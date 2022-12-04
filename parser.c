@@ -933,6 +933,7 @@ bool functionDefStExpansion(tokList* tl, bool firstPass){
     fDefSt = fDefSt && compareLexTypes(t, PAR_R);
     t = getNextToken(tl);
 
+    printf("JUMP _%s_FUNC_END\n", funkce->functionName);
     printf("LABEL _%s\n", funkce->functionName);
     fDefSt = fDefSt && compareLexTypes(t, COLON) && typeExpansion(tl, &funkce->returnType, &funkce->nullable, true);
     if(ht_get(&symtable, funkce->functionName)) semanticError(3);
@@ -967,6 +968,7 @@ bool functionDefStExpansion(tokList* tl, bool firstPass){
     printf("LABEL _%s_VAR_DEFS\n", funkce->functionName);
     defineFunctionVars(*funkce->localTable);
     printf("RETURN\n");
+    printf("LABEL _%s_FUNC_END\n", funkce->functionName);
     return fDefSt;
 }
 
