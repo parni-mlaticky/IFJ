@@ -74,7 +74,7 @@ void addBuiltinFunctionsToSymtable(){
 // ONE BIG FIXME
 bool firstPass(tokList* tl){
     char* funcName = NULL;
-    bool fPass = false;
+    bool fPass = true;
     dataType returnType;
     bool nullable;
     varList* args;
