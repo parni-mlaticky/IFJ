@@ -124,9 +124,12 @@ bool firstPass(tokList* tl){
 
         Token* iter = getNextToken(tl);
         int count = 0;
-        while(!compareLexTypes(iter, CBR_L)){
-            if(!iter) syntaxError(NULL, "Error in function definition\n");
-            iter = getNextToken(tl);
+        if(!compareLexTypes(iter, CBR_L)){
+            syntaxError(NULL, "Error in function definition\n");
+        }
+
+        if(!fPass){
+            syntaxError(NULL, "Error in function definition\n");
         }
         count++;
         while(count > 0){
