@@ -543,9 +543,9 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
 
             case DIV:
                 printf(
-                    "CALL %%TRY_INT_2_FLOAT\n"
+                    "CALL _floatval\n"
                     "CALL %%STACK_SWAP\n"
-                    "CALL %%TRY_INT_2_FLOAT\n"
+                    "CALL _floatval\n"
                     "CALL %%STACK_SWAP\n"
                     "DIVS\n");
                 break;
