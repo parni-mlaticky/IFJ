@@ -64,7 +64,7 @@ bool blockSTListExpansion(tokList* tl, function* func);
 
 bool blockSTExpansion(tokList* tl, function* func);
 
-bool functionDefStExpansion(tokList* tl, bool firstPass);
+bool functionDefStExpansion(tokList* tl);
 
 bool ifStExpansion(tokList* tl, function* func);
 

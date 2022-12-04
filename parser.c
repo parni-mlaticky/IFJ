@@ -76,7 +76,7 @@ bool firstPass(tokList* tl){
     char* funcName = NULL;
     bool fPass = true;
     dataType returnType;
-    bool nullable;
+    bool nullable = false;
     varList* args;
     ht_table_t* localTable;
     symtableElem* var;
@@ -104,7 +104,7 @@ bool firstPass(tokList* tl){
         fPass = fPass && compareLexTypes(t, COLON) && typeExpansion(tl, &returnType, &nullable, true);
         if(ht_get(&symtable, funcName)) semanticError(3);
 
-    localTable = malloc(sizeof(ht_table_t));
+    localTable = calloc(sizeof(ht_table_t), 1);
     varListFirst(args);
     variable varIter;
     while(args->active){ // FIXME LIST ISACTIVE METHOD!!!
@@ -669,7 +669,6 @@ bool parse_file(FILE* file) {
         token = *new;
         tokListAppend(list, new);
     } while (token.lex != END);
-    debug_print_tokens(list);
     ht_init(&symtable);
     generateStarterAsm();
     addBuiltinFunctionsToSymtable();
@@ -884,7 +883,7 @@ bool STExpansion(tokList* tl){
         printf("POPS GF@%%RAX\n");
     }
     else if(compareLexTypes(t, FUN_ID)){
-        if(compareTerminalStrings(t, "function")) St = functionDefStExpansion(tl, false);
+        if(compareTerminalStrings(t, "function")) St = functionDefStExpansion(tl);
         else if(compareTerminalStrings(t, "if")) St = ifStExpansion(tl, NULL);
         else if(compareTerminalStrings(t, "while")) St = whileStExpansion(tl, NULL);
         else if(compareTerminalStrings(t, "return")) St = returnStExpansion(tl, NULL);
@@ -918,7 +917,7 @@ bool endTokenExpansion(tokList* tl){
     return end;
 }
 
-bool functionDefStExpansion(tokList* tl, bool isFirstPass){
+bool functionDefStExpansion(tokList* tl){
     bool fDefSt = false;
     char* funcName = NULL;
     getNextToken(tl);
@@ -1099,7 +1098,7 @@ bool paramsExpansion(tokList* tl, varList* args){
     // () blank function call
     if(compareLexTypes(t, PAR_R)) params = true;
     else{
-        variable* var = malloc(sizeof(variable));
+        variable* var = calloc(sizeof(variable), 1);
 
         //var type
         //dataType variableType;
