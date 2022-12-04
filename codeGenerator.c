@@ -1,11 +1,16 @@
 #include "codeGenerator.h"
 
+
+
 void generateStarterAsm() {
     printf(".IFJcode22\n");
     printf("DEFVAR GF@%%RAX\n");
     printf("DEFVAR GF@%%RBX\n");
-    printf("CREATEFRAME\nPUSHFRAME\n");
     printf("JUMP %%PROG_START\n");
+    printf("LABEL %%ERROR_4\n");
+    printf("EXIT int@4\n");
+    printf("LABEL %%ERROR_6\n");
+    printf("EXIT int@6\n");
     generateToBoolFunction();
     // generateToFloatFunction();
     generateEnforceTypesFunction();
@@ -15,13 +20,14 @@ void generateStarterAsm() {
     generateBuiltInFunctions();
     generateEmptyStringToInt();
     generateCompareDtypes();
+    generateCheckIfIsType();
+    generateCheckIfIsTypeOrNull();
     generateNonEquality();
     generateGreatEqual();
     generateLessEqual();
     generateEquality();
     generateGreat();
     generateLess();
-    printf("LABEL %%PROG_START\n");
 }
 
 void defineFunctionVars(ht_table_t symtable) {
@@ -162,6 +168,45 @@ void generateCompareDtypes() {
         "EQ GF@%%RAX GF@%%RAX GF@%%RBX\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n");
+}
+
+void generateCheckIfIsType(){
+    printf(
+        "LABEL %%CHECK_IF_IS_TYPE\n"
+        "POPS GF@%%RBX\n"
+        "POPS GF@%%RAX\n"
+        "TYPE GF@%%RAX GF@%%RAX\n"
+        "PUSHS GF@%%RAX\n"
+        "PUSHS GF@%%RBX\n"
+        "EQS\n"
+        "RETURN\n"
+    );
+}
+
+void generateCheckIfIsTypeOrNull(){
+    printf(
+        "LABEL %%CHECK_IF_IS_TYPE_OR_NULL\n"
+        "CREATEFRAME\n"
+        "PUSHFRAME\n"
+        "DEFVAR LF@TMP\n"
+
+        "POPS GF@%%RBX\n"
+        "POPS GF@%%RAX\n"
+        "TYPE GF@%%RAX GF@%%RAX\n"
+        "MOVE LF@TMP GF@%%RAX\n" 
+
+        "PUSHS GF@%%RAX\n"
+        "PUSHS GF@%%RBX\n"
+        "EQS\n"
+
+        "PUSHS string@nil\n"
+        "PUSHS LF@TMP\n"
+        "EQS\n"
+        "ORS\n"
+
+        "POPFRAME\n"
+        "RETURN\n"
+    );
 }
 
 void generateEquality() {
@@ -356,12 +401,15 @@ int countEscapeSequences(char *string) {
     return count;
 }
 
-void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_table_t *symtable) {
+void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_table_t *localSymtable, ht_table_t* globalSymtable) {
     if (!root) {
         return;
     }
     if (root->NTType != EXPR) {
         switch (root->NTType) {
+            case EMPTY:
+                printf("PUSHS nil@nil\n");
+                break;
             case VAR_ID_TERM:
                 if (!isLeftSideOfAssignment) {
                     printf("PUSHS LF@%s\n", root->term.var->name);
@@ -407,37 +455,79 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                 // clean up??
                 // profit??
                 ;
-                symtableElem *func = ht_get(symtable, root->term.func->funId);
-                if (!func)
-                    semanticError(3);
-                
-                // TODO do function calls and finally finish this piece of shit
-                if(!root->term.func->args){
-                    return;
+                symtableElem *func = ht_get(globalSymtable, root->term.func->funId);
+                // Function doesnt exit
+                if (!func) semanticError(3);
+
+                // Function has the correct number of arguments OR it can have N arguments (write() for example)
+                else if((!func->f->args || func->f->args->len == root->term.func->args->len)){
+                    
+                    // Functions that can have N arguments: we have to push in opposite order
+                    if(!func->f->args){
+                        nontermListLast(root->term.func->args);
+                        Nonterminal* iter;    
+                        for(int i = 0; i < root->term.func->args->len; i++){
+                            iter = nontermListGetValue(root->term.func->args);
+                            generateExpressionCode(iter, false, localSymtable, globalSymtable);
+                            nontermListPrev(root->term.func->args);
+                        }
+                        printf("PUSHS int@%d\n", root->term.func->args->len);
+                    }
+                    else{
+                        nontermListFirst(root->term.func->args);
+                        Nonterminal* iter;    
+                        for(int i = 0; i < root->term.func->args->len; i++){
+                            iter = nontermListGetValue(root->term.func->args);
+                            generateExpressionCode(iter, false, localSymtable, globalSymtable);
+                            nontermListNext(root->term.func->args);
+                        }
+                    }
+                    
+                    
+                    printf("CREATEFRAME\n");
+                    printf("PUSHFRAME\n");
+                    printf("CALL _%s\n", root->term.func->funId);
+                    printf(
+                        "POPS GF@%%RAX\n"
+                        "PUSHS GF@%%RAX\n"
+                        "PUSHS GF@%%RAX\n"
+                        );
+                    printf("PUSHS string@%s\n", enumTypeToStr(func->f->returnType));
+                    if(!func->f->nullable){
+                        printf(
+                            "CALL %%CHECK_IF_IS_TYPE\n"
+                            "PUSHS bool@false\n"
+                            "JUMPIFEQS %%ERROR_4\n"
+                            );   
+                    }
+                    else{
+                        printf(
+                            "CALL %%CHECK_IF_IS_TYPE_OR_NULL\n"
+                            "PUSHS bool@false\n"
+                            "JUMPIFEQS %%ERROR_4\n"
+                        );  
+                    }
+                    printf("POPFRAME\n");
+                    break;                
                 }
-                nontermListLast(root->term.func->args);
-                if(!root->term.func->args->active){
-                    return;
+
+                // Function call has a different number of arguments than the definition
+                else if(func->f->args->len != root->term.func->args->len){
+                    semanticError(4);
                 }
-                Nonterminal *nt;
-                for (int i = 0; i < root->term.func->args->len; i++) {
-                    nt = nontermListGetValue(root->term.func->args);
-                    generateExpressionCode(nt, false, symtable);
-                    nontermListPrev(root->term.func->args);
-                }
-                break;
+
             default:
                 break;
         }
     } else {
         if (root->expr.op == AS) {
             // Assignments are traversed using reverse postorder.
-            generateExpressionCode(root->expr.right, false, symtable);
-            generateExpressionCode(root->expr.left, true, symtable);
+            generateExpressionCode(root->expr.right, false, localSymtable, globalSymtable);
+            generateExpressionCode(root->expr.left, true, localSymtable, globalSymtable);
         } else {
             // All other expressions are traversed using normal postorder.
-            generateExpressionCode(root->expr.left, false, symtable);
-            generateExpressionCode(root->expr.right, false, symtable);
+            generateExpressionCode(root->expr.left, false, localSymtable, globalSymtable);
+            generateExpressionCode(root->expr.right, false, localSymtable, globalSymtable);
         }
         switch (root->expr.op) {
             case PLUS:
@@ -521,20 +611,20 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
 void generateBuiltInFunctions() {
     // reads() READ STRING
     printf(
-        "LABEL %%READS\n"
+        "LABEL _reads\n"
         "READ GF@%%RAX string\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n");
 
     // readi() READ INT
     printf(
-        "LABEL %%READI\n"
+        "LABEL _readi\n"
         "READ GF@%%RAX int\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n");
     // readf() READ FLOAT
     printf(
-        "LABEL %%READF\n"
+        "LABEL _readf\n"
         "READ GF@%%RAX float\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n");
@@ -543,7 +633,7 @@ void generateBuiltInFunctions() {
     printf(
         // Since this function can have any number of arguments,
         // the number of arguments will be pushed together with the arguments themselves
-        "LABEL %%WRITE\n"
+        "LABEL _write\n"
 
         // Pop the number of args into RAX
         "POPS GF@%%RAX\n"
@@ -557,11 +647,12 @@ void generateBuiltInFunctions() {
         "JUMP %%WRITE_LOOP\n"
 
         "LABEL %%WRITE_RETURN\n"
+        "PUSHS nil@nil\n"
         "RETURN\n");
 
     // floatval()
     printf(
-        "LABEL %%FLOATVAL\n"
+        "LABEL _floatval\n"
         "POPS GF@%%RAX\n"
         "TYPE GF@%%RBX GF@%%RAX\n"
 
@@ -583,7 +674,7 @@ void generateBuiltInFunctions() {
 
     // intval()
     printf(
-        "LABEL %%INTVAL\n"
+        "LABEL _intval\n"
         "POPS GF@%%RAX\n"
         "TYPE GF@%%RBX GF@%%RAX\n"
 
@@ -605,7 +696,7 @@ void generateBuiltInFunctions() {
 
     // strval()
     printf(
-        "LABEL %%STRVAL\n"
+        "LABEL _strval\n"
         "POPS GF@%%RAX\n"
         "TYPE GF@%%RBX GF@%%RAX\n"
 
@@ -623,16 +714,16 @@ void generateBuiltInFunctions() {
 
     // strlen()
     printf(
-        "LABEL %%STRLEN\n"
+        "LABEL _strlen\n"
         "POPS GF@%%RAX\n"
         "STRLEN GF@%%RAX GF@%%RAX\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n");
 
-    // TODO create frames for these builtin functions
 
     // substring()
     printf(
+        "LABEL _substring\n"
         // Define local vars
         "DEFVAR LF@$i\n"
         "DEFVAR LF@$j\n"
@@ -701,7 +792,7 @@ void generateBuiltInFunctions() {
 
     // ord()
     printf(
-        "LABEL %%ORD\n"
+        "LABEL _ord\n"
         "POPS GF@%%RBX\n"
 
         "STRLEN GF@%%RAX GF@%%RBX\n"
@@ -720,10 +811,25 @@ void generateBuiltInFunctions() {
     // chr()
 
     printf(
-        "LABEL %%CHR\n"
+        "LABEL _chr\n"
         "POPS GF@%%RBX\n"
-
         "INT2CHAR GF@%%RAX GF@%%RBX\n"
         "PUSHS GF@%%RAX\n"
         "RETURN\n");
+}
+
+char* enumTypeToStr(dataType dType){
+    switch(dType){
+        case INT:
+            return "int";
+        case FLOAT:
+            return "float";
+        case STRING:
+            return "string";
+        case NULL_T:
+            return "nil";    
+        case UNKNOWN:
+            return NULL;      
+    }
+    return NULL;
 }
