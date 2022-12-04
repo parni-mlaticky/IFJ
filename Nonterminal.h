@@ -4,6 +4,7 @@
 #include "list.h"
 
 typedef enum NonterminalType{
+    EMPTY,
     LITERAL_TERM,
     VAR_ID_TERM,
     FUNCALL_TERM,

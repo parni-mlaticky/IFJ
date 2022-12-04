@@ -331,7 +331,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
                         stackPushNonterminal(s, nullNonterm);
                     }
                     else{
-                        Nonterminal* funcNonterm = createFuncallNonterminal(tmp->data.terminal->token->string, NULL);
+                        Nonterminal* funcNonterm = createFuncallNonterminal(tmp->data.terminal->token->string, tmp->data.terminal->funcArgs);
                         stackPushNonterminal(s, funcNonterm);
                     }
       
@@ -486,6 +486,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
     int parCount = 0;
 
     stackPushTerminal(&s, DOLLAR, NULL);
+    bool emptyExpr = true;
     Token* token;
     stackElement* top;
     while(1){
@@ -498,6 +499,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
             else{
                 while(!containsOnlyTopNonterm(&s)){
                     precParseReduction(&s, &relOpInExp);
+                    emptyExpr = false;
                 }
                 break;
             }
@@ -524,7 +526,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
                     
                     // there has to be a '(' while calling a function
                     if(nextToken->lex != PAR_L) {
-                    syntaxError(nextToken, "precParser missing '(' while calling a function error");
+                        syntaxError(nextToken, "precParser missing '(' while calling a function error");
                     }
 
                     nextToken = tokListGetValue(tl);       // should be '('
@@ -533,7 +535,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
 
                         //unclosed function call
                         if(nextToken->lex == END) {
-                        syntaxError(nextToken, "precParser ')' missing at the end of a function call");
+                            syntaxError(nextToken, "precParser ')' missing at the end of a function call");
                         }
                     //fprintf(stderr, "tl.active is: %d\n", tl->active->data->lex);
                     if(precParser(tl, &nonTerm)) {
@@ -541,7 +543,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
                         nextToken = tokListGetValue(tl);
 
                         if(nextToken->lex == PAR_R) {
-                        break;
+                            break;
                         }
         
                         nextToken = getNextToken(tl);
@@ -577,6 +579,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
         }
         else if(prec == P_GREATER){
             precParseReduction(&s, &relOpInExp);
+            emptyExpr = false;
         }
         else if(prec == P_EQ){
             stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
@@ -590,11 +593,13 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
     if((containsOnlyTopNonterm(&s) || stackIsEmpty(&s)) && token->lex == SEMICOLON){
         result = true;
     }
-    if(result){
+    if(result && !emptyExpr){
         *finalNonterm = s.top->data.nonterminal;
     }
     else{
-        *finalNonterm = NULL;
+        Nonterminal* empty = malloc(sizeof(Nonterminal));
+        empty->NTType = EMPTY;
+        *finalNonterm = empty;
     }
     return result;
 }
@@ -615,9 +620,12 @@ bool parse_file(FILE* file) {
     generateStarterAsm();
     addBuiltinFunctionsToSymtable();
     result = firstPass(list);
-    printf("LABEL %%PROG_START\n");
-    printf("CALL %%MAIN_VAR_DEFS\n");
     tokListFirst(list);
+
+    printf("LABEL %%PROG_START\n");
+    printf("CREATEFRAME\n" "PUSHFRAME\n");
+    printf("CALL %%MAIN_VAR_DEFS\n");
+
     result = result && recursiveDescent(list);
 
     printf("EXIT int@0\n");
@@ -749,7 +757,7 @@ bool blockSTExpansion(tokList* tl, function* func){
         processPossibleVariableDefinition(expTree, localSymtable);
 
         t = getNextToken(tl);
-        generateExpressionCode(expTree, false, &symtable);
+        generateExpressionCode(expTree, false, &symtable, &symtable);
         blockSt = blockSt && compareLexTypes(t, SEMICOLON);
         printf("POPS GF@%%RAX\n");
     }
@@ -763,7 +771,7 @@ bool blockSTExpansion(tokList* tl, function* func){
             blockSt = precParser(tl, &expTree);
             processPossibleVariableDefinition(expTree, localSymtable);
             t = getNextToken(tl);
-            generateExpressionCode(expTree, false, localSymtable);
+            generateExpressionCode(expTree, false, localSymtable, &symtable);
             blockSt = blockSt && compareLexTypes(t, SEMICOLON);
             printf("POPS GF@%%RAX\n");
         }    
@@ -773,7 +781,7 @@ bool blockSTExpansion(tokList* tl, function* func){
         blockSt = precParser(tl, &expTree);
         processPossibleVariableDefinition(expTree, localSymtable);
         t = getNextToken(tl);
-        generateExpressionCode(expTree, false, &symtable);
+        generateExpressionCode(expTree, false, &symtable, &symtable);
         blockSt = blockSt && compareLexTypes(t, SEMICOLON);
         printf("POPS GF@%%RAX\n");
     }
@@ -817,7 +825,7 @@ bool STExpansion(tokList* tl){
         St = precParser(tl, &expTree);
         processPossibleVariableDefinition(expTree, &symtable);
         t = getNextToken(tl);
-        generateExpressionCode(expTree, false, &symtable);
+        generateExpressionCode(expTree, false, &symtable, &symtable);
         St = St && compareLexTypes(t, SEMICOLON);
         printf("POPS GF@%%RAX\n");
     }
@@ -831,7 +839,7 @@ bool STExpansion(tokList* tl){
             St = precParser(tl, &expTree);
             processPossibleVariableDefinition(expTree, &symtable);
             t = getNextToken(tl);
-            generateExpressionCode(expTree, false, &symtable);
+            generateExpressionCode(expTree, false, &symtable, &symtable);
             St = St && compareLexTypes(t, SEMICOLON);
             printf("POPS GF@%%RAX\n");
         }     
@@ -842,7 +850,7 @@ bool STExpansion(tokList* tl){
         St = precParser(tl, &expTree);
         processPossibleVariableDefinition(expTree, &symtable);
         t = getNextToken(tl);
-        generateExpressionCode(expTree, false, &symtable);
+        generateExpressionCode(expTree, false, &symtable, &symtable);
         St = St && compareLexTypes(t, SEMICOLON);
         printf("POPS GF@%%RAX\n");
     }    
@@ -857,7 +865,9 @@ bool endTokenExpansion(tokList* tl){
 }
 
 bool functionDefStExpansion(tokList* tl, bool firstPass){
-    if(!firstPass){
+    // FIXME if first pass, dat do tabulky symbolu zaznam o funkci a preskocit funkzi
+    // if !first pass, projit telo funkce a vygenerovat kod
+    if(firstPass){
         Token* iter = getNextToken(tl);
         int count = 0;
         while(!compareLexTypes(iter, CBR_L)){
@@ -928,10 +938,31 @@ bool functionDefStExpansion(tokList* tl, bool firstPass){
     if(ht_get(&symtable, funkce->functionName)) semanticError(3);
     ht_insert(&symtable, funkce->functionName, functionElem);
     printf("CALL _%s_VAR_DEFS\n", funkce->functionName);
+    varListFirst(funkce->args);
+    variable argsIter;
+    for(int i = 0; i < funkce->args->len; i++){
+        argsIter = varListGetValue(funkce->args);
+        printf("POPS LF@%s\n", argsIter.name);
+        printf("PUSHS LF@%s\n", argsIter.name);
+        printf("PUSHS string@%s\n", enumTypeToStr(argsIter.dType));
+        if(!argsIter.nullable){
+            printf("CALL %%CHECK_IF_IS_TYPE\n");
+        }
+        else{
+            printf("CALL %%CHECK_IF_IS_TYPE_OR_NULL\n");
+        }
+        printf("PUSHS bool@false\n");
+        printf("JUMPIFEQS %%ERROR_4\n");
+        varListNext(funkce->args);
+    }
 
     fDefSt = fDefSt && blockExpansion(tl, funkce);
     if(funkce->returnType != NULL_T){
-        printf("EXIT int@4\n"); // FIXME this should be a special label that we will jump to i guess
+        printf("JUMP %%ERROR_6\n"); // FIXME this should be a special label that we will jump to i guess
+    }
+    else{
+        printf("PUSHS nil@nil\n");
+        printf("RETURN\n");
     }
     printf("LABEL _%s_VAR_DEFS\n", funkce->functionName);
     defineFunctionVars(*funkce->localTable);
@@ -960,7 +991,7 @@ bool ifStExpansion(tokList* tl, function* func){
     Nonterminal* expTree;
     ifSt = ifSt && precParser(tl, &expTree);
     processPossibleVariableDefinition(expTree, localSymtab);
-    generateExpressionCode(expTree, false, &symtable);
+    generateExpressionCode(expTree, false, &symtable, &symtable);
 
     printf("CALL %%TO_BOOL\n");
     printf("PUSHS bool@false\n");
@@ -1007,7 +1038,7 @@ bool whileStExpansion(tokList* tl, function* func){
     processPossibleVariableDefinition(expTree, localSymtable);
 
     printf("LABEL WHILE%d\n", currentWhileId);
-    generateExpressionCode(expTree, false, &symtable);
+    generateExpressionCode(expTree, false, &symtable, &symtable);
     printf("CALL %%TO_BOOL\n");
     printf("PUSHS bool@false\n");
 
@@ -1036,12 +1067,26 @@ bool returnStExpansion(tokList* tl, function* func){
     Nonterminal* expTree;
     returnSt = returnSt && precParser(tl, &expTree);
     processPossibleVariableDefinition(expTree, localSymtable);
-    generateExpressionCode(expTree, false, localSymtable);
+    generateExpressionCode(expTree, false, localSymtable, &symtable);
 
     t = getNextToken(tl);
     returnSt = returnSt && compareLexTypes(t, SEMICOLON);
 
-    printf("POPS GF@%%RAX\n");
+    // if the return is in the main body of the program, just exit with code 0
+    if(!func){
+        printf("EXIT int@0\n");
+    }
+    else if(func->returnType == NULL_T){
+        if(expTree->NTType != EMPTY){
+            semanticError(6);
+        }
+    }
+    else{
+        if(expTree->NTType == EMPTY){
+            semanticError(4);
+        }
+    }
+    printf("RETURN\n");
     return returnSt;
 }
 

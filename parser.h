@@ -82,7 +82,6 @@ bool typeExpansion(tokList* tl, dataType* returnType, bool* nullable, bool isRet
 
 bool typeNameExpansion(tokList* tl, bool questionMark, dataType* returnType, bool isReturnType);
 bool blockExpansion(tokList* tl, function* func);
-
 bool isRelOperator(terminalType tType);
 
 void debugPrintExprTree(Nonterminal* root);
