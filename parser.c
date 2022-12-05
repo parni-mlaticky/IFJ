@@ -102,6 +102,7 @@ bool firstPass(tokList* tl){
         fPass = fPass && compareLexTypes(t, PAR_R);
         t = getNextToken(tl);
         fPass = fPass && compareLexTypes(t, COLON) && typeExpansion(tl, &returnType, &nullable, true);
+        if(!fPass) syntaxError(NULL, "Function definition error\n");
         if(ht_get(&symtable, funcName)) semanticError(3);
 
     localTable = calloc(sizeof(ht_table_t), 1);
@@ -139,6 +140,9 @@ bool firstPass(tokList* tl){
             }
             else if(compareLexTypes(iter, CBR_R)){
                 count--;
+            }
+            else if(!iter){
+                syntaxError(NULL, "Error in function definition\n");
             }
         }
         t = getNextToken(tl);
@@ -1121,7 +1125,7 @@ bool paramListExpansion(tokList* tl, varList* args){
     t = tokListGetValue(tl);
     if(compareLexTypes(t, PAR_R)) paramList = true;
     else{
-        variable* var = malloc(sizeof(variable));
+        variable* var = calloc(sizeof(variable), 1);
 
         //dataType variableType;
         t = getNextToken(tl);
