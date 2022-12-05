@@ -746,7 +746,7 @@ void generateBuiltInFunctions() {
         "POPS LF@$s\n"
         "PUSHS LF@$s\n"
         "PUSHS string@string\n"
-        "CALL %%CHECK_IF_IS_TYPE_OR_NULL\n"
+        "CALL %%CHECK_IF_IS_TYPE\n"
         "PUSHS bool@false\n"
         "JUMPIFEQS %%ERROR_4\n"
 
