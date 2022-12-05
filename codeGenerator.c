@@ -359,6 +359,7 @@ void generateToBoolFunction() {
         "JUMPIFEQ %%STRING GF@%%RBX string@string\n"
         "JUMPIFEQ %%INT GF@%%RBX string@int\n"
         "JUMPIFEQ %%FLOAT GF@%%RBX string@float\n"
+        "JUMPIFEQ %%VALUE_IS_FALSE GF@%%RBX string@nil\n"
 
         // If the type is bool, nothing needs to be converted, so just push back the original value
         "LABEL %%BOOL\n"
