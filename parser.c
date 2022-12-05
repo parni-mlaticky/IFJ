@@ -1086,7 +1086,7 @@ bool returnStExpansion(tokList* tl, function* func){
     }
     else{
         if(expTree->NTType == EMPTY){
-            semanticError(4);
+            semanticError(6);
         }
     }
     printf("RETURN\n");
