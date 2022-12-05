@@ -102,5 +102,7 @@ Nonterminal* createFuncallNonterminal(char* funId, nontermList* args);
 Nonterminal* createVariableNonterminal(char* varId, dataType dType);
 
 Nonterminal* createExprNonterminal(Nonterminal* left, Nonterminal* right, terminalType operator);
+
+void compileTimeExpressionEval(Nonterminal* expTree);
 Nonterminal* createNullNonterminal();
 #endif

@@ -418,6 +418,9 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                 break;
             case VAR_ID_TERM:
                 if (!isLeftSideOfAssignment) {
+                    if(!ht_get(localSymtable, root->term.var->name)){
+                        semanticError(5);
+                    }
                     printf("PUSHS LF@%s\n", root->term.var->name);
                 }
                 break;
