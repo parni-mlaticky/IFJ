@@ -11,6 +11,8 @@ void generateStarterAsm() {
     printf("EXIT int@4\n");
     printf("LABEL %%ERROR_6\n");
     printf("EXIT int@6\n");
+    printf("LABEL %%ERROR_5\n");
+    printf("EXIT int@5\n");
     generateToBoolFunction();
     // generateToFloatFunction();
     generateEnforceTypesFunction();
@@ -422,7 +424,9 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                     if(!ht_get(localSymtable, root->term.var->name)){
                         semanticError(5);
                     }
-                    printf("PUSHS LF@%s\n", root->term.var->name);
+                    printf("TYPE GF@%%RBX LF@%s\n", root->term.var->name);
+                    printf("JUMPIFEQ %%ERROR_5 GF@%%RBX string@\n");
+                    printf("PUSHS LF@%s\n", root->term.var->name);  
                 }
                 break;
             case LITERAL_TERM:
