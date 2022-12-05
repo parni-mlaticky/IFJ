@@ -353,8 +353,7 @@ StateInfo get_next_state(ScannerState current_state, int *c, FSMMemory* memory) 
             return (StateInfo) {.result = R_FINAL_NOADD, .lex = QUESTION_MARK};
 
         case S_START_VARIABLE_ID:
-            if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') ||
-                (*c >= '0' && *c <= '9') || (*c == '_')) {
+            if ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') || (*c == '_')) {
                 return (StateInfo) {.result = R_ADD, .next_state = S_VARIABLE_ID};
             }
             // Empty variable name
