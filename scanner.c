@@ -640,12 +640,6 @@ Token scan_next_token(FILE *file, bool expect_prolog)
         }
     }
 
-    if(c == EOF) {
-        return (Token) {
-            .lex = END,
-        };
-    }
-
     if (returnLex == SCRIPT_STOP) {
         int c = fgetc(file);
         if (c == EOF) {
