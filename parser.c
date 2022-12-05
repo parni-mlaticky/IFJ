@@ -263,7 +263,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
                 return P_LESS;
             }
             else if(lexToTerm == AS || lexToTerm == EQ || lexToTerm == NEQ
-            || lexToTerm == DOLLAR){
+            || lexToTerm == DOLLAR || lexToTerm == RPAR){
                 return P_GREATER;
             }
             else syntaxError(NULL, "getPrecedence EQ/NEQ case error");
@@ -680,6 +680,7 @@ bool parse_file(FILE* file) {
         tokListAppend(list, new);
         expect_prolog = false;
     } while (token.lex != END);
+    debug_print_tokens(list);
     ht_init(&symtable);
     generateStarterAsm();
     addBuiltinFunctionsToSymtable();

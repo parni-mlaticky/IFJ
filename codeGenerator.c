@@ -444,7 +444,12 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                         char buffer[7] = {'\0', };
                         for (size_t i = 0; root->term.stringLit[i] != '\0'; i++) {
                             if ((root->term.stringLit[i] >= 0 && root->term.stringLit[i] <= 32) || root->term.stringLit[i] == 35 || root->term.stringLit[i] == 92) {
-                                sprintf(buffer, "\\0%d", root->term.stringLit[i]);
+                                if(root->term.stringLit[i] < 10){
+                                    sprintf(buffer, "\\00%d", root->term.stringLit[i]);
+                                }
+                                else{
+                                    sprintf(buffer, "\\0%d", root->term.stringLit[i]);
+                                }
                             } else {
                                 sprintf(buffer, "%c", root->term.stringLit[i]);
                             }
