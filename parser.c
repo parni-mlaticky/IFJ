@@ -526,7 +526,7 @@ Nonterminal* createVariableNonterminal(char* varId, dataType dType){
 }
 
 Nonterminal* createExprNonterminal(Nonterminal* left, Nonterminal* right, terminalType operator){
-    Nonterminal* newNonterminal = malloc(sizeof(Nonterminal));
+    Nonterminal* newNonterminal = calloc(sizeof(Nonterminal), 1);
 
     newNonterminal->expr.left = left;
     newNonterminal->expr.right = right;
@@ -657,6 +657,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
     }
     if(result && !emptyExpr){
         *finalNonterm = s.top->data.nonterminal;
+        // FIXME compileTimeExpressionEval(*finalNonterm);
     }
     else{
         Nonterminal* empty = malloc(sizeof(Nonterminal));
@@ -1238,3 +1239,19 @@ void debugPrintExprTree(Nonterminal* root){
         debugPrintExprTree(root->expr.right);
     }
 }
+
+
+// FIXME
+/* void compileTimeExpressionEval(Nonterminal* expTree){
+    if(!expTree){
+        return;
+    }
+    compileTimeExpressionEval(expTree->expr.left);
+    compileTimeExpressionEval(expTree->expr.right);
+    switch(expTree->NTType){
+        case EMPTY:
+            return;
+        case LITERAL_TERM: case FUNCALL_TERM: case VAR_ID_TERM:
+            return;    
+    }
+} */
