@@ -604,11 +604,13 @@ bool parse_file(FILE* file) {
     tokList* list = malloc(sizeof(tokList));
     tokListInit(list);
     Token token;
+    bool expect_prolog = true;
     do {
         Token* new = malloc(sizeof(Token));
-        *new = scan_next_token(file, false);
+        *new = scan_next_token(file, expect_prolog);
         token = *new;
         tokListAppend(list, new);
+        expect_prolog = false;
     } while (token.lex != END);
     debug_print_tokens(list);
     ht_init(&symtable);

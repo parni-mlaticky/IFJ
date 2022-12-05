@@ -378,9 +378,6 @@ StateInfo get_next_state(ScannerState current_state, int *c, FSMMemory* memory) 
                 case '=':
                     return (StateInfo) {.result = R_FINAL_SKIP, .lex = LESS_EQUAL};
 
-                case '?':
-                    return (StateInfo) {.result = R_SKIP, .next_state = S_PROLOG_LQ};
-
                 default:
                     return (StateInfo) {.result = R_FINAL_NOADD, .lex = LESS};
             }
