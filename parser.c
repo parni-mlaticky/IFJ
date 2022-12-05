@@ -819,7 +819,7 @@ bool blockSTExpansion(tokList* tl, function* func){
         processPossibleVariableDefinition(expTree, localSymtable);
 
         t = getNextToken(tl);
-        generateExpressionCode(expTree, false, &symtable, &symtable);
+        generateExpressionCode(expTree, false, localSymtable, &symtable);
         blockSt = blockSt && compareLexTypes(t, SEMICOLON);
         printf("POPS GF@%%RAX\n");
     }
@@ -843,7 +843,7 @@ bool blockSTExpansion(tokList* tl, function* func){
         blockSt = precParser(tl, &expTree);
         processPossibleVariableDefinition(expTree, localSymtable);
         t = getNextToken(tl);
-        generateExpressionCode(expTree, false, &symtable, &symtable);
+        generateExpressionCode(expTree, false, localSymtable, &symtable);
         blockSt = blockSt && compareLexTypes(t, SEMICOLON);
         printf("POPS GF@%%RAX\n");
     }
@@ -994,7 +994,7 @@ bool ifStExpansion(tokList* tl, function* func){
     Nonterminal* expTree;
     ifSt = ifSt && precParser(tl, &expTree);
     processPossibleVariableDefinition(expTree, localSymtab);
-    generateExpressionCode(expTree, false, &symtable, &symtable);
+    generateExpressionCode(expTree, false, localSymtab, &symtable);
 
     printf("CALL %%TO_BOOL\n");
     printf("PUSHS bool@false\n");
@@ -1041,7 +1041,7 @@ bool whileStExpansion(tokList* tl, function* func){
     processPossibleVariableDefinition(expTree, localSymtable);
 
     printf("LABEL WHILE%d\n", currentWhileId);
-    generateExpressionCode(expTree, false, &symtable, &symtable);
+    generateExpressionCode(expTree, false, localSymtable, &symtable);
     printf("CALL %%TO_BOOL\n");
     printf("PUSHS bool@false\n");
 
@@ -1241,7 +1241,6 @@ void debugPrintExprTree(Nonterminal* root){
 }
 
 
-// FIXME
 /* void compileTimeExpressionEval(Nonterminal* expTree){
     if(!expTree){
         return;
@@ -1249,9 +1248,12 @@ void debugPrintExprTree(Nonterminal* root){
     compileTimeExpressionEval(expTree->expr.left);
     compileTimeExpressionEval(expTree->expr.right);
     switch(expTree->NTType){
-        case EMPTY:
-            return;
-        case LITERAL_TERM: case FUNCALL_TERM: case VAR_ID_TERM:
-            return;    
+        case EXPR:
+            if(expTree->expr.left->NTType == LITERAL_TERM && expTree->expr.right->NTType == LITERAL_TERM){
+                switch(expTree->expr.op){
+                    case PLUS: case MINUS: case MUL:
+                }
+            }
+        default: return;
     }
 } */
