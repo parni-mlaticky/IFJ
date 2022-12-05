@@ -31,10 +31,15 @@ void generateStarterAsm() {
 }
 
 void defineFunctionVars(ht_table_t symtable) {
+    ht_item_t* iter;
     for (int i = 0; i < MAX_HT_SIZE; i++) {
-        if (symtable[i]) {
-            if (symtable[i]->value->type == VARIABLE) {
-                printf("DEFVAR LF@%s\n", symtable[i]->value->v->name);
+        iter = symtable[i];
+        if (iter) {
+            while(iter){
+                if (symtable[i]->value->type == VARIABLE) {
+                    printf("DEFVAR LF@%s\n", iter->value->v->name);
+                }
+                iter = iter->next;
             }
         }
     }
