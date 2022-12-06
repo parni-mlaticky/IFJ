@@ -21,9 +21,11 @@ void generateStarterAsm() {
     generateNullToIntFunction();
     generateBuiltInFunctions();
     generateEmptyStringToInt();
+    generateNormalizeTypes();
     generateCompareDtypes();
     generateCheckIfIsType();
     generateCheckIfIsTypeOrNull();
+    generateNullToString();
     generateNonEquality();
     generateGreatEqual();
     generateLessEqual();
@@ -72,7 +74,6 @@ void generateNullToIntFunction() {
         "LABEL %%NULL_TO_INT\n"
         // First operand
         "POPS GF@%%RAX\n"
-        "PUSHS GF@%%RAX\n"
         "TYPE GF@%%RBX GF@%%RAX\n"
         "JUMPIFNEQ %%NULL_TO_INT_BNN GF@%%RBX string@nil\n"
         "PUSHS int@0\n"
@@ -83,23 +84,24 @@ void generateNullToIntFunction() {
 
         // Second operand
         "LABEL %%NULL_TO_INT_T\n"
-        "POPS GF@%%RBX\n"
-        "POPS GF@%%RBX\n"
-        "TYPE GF@%%RAX GF@%%RBX\n"
-        "JUMPIFNEQ %%NULL_TO_INT_TNN GF@%%RAX string@nil\n"
+        "CALL %%STACK_SWAP\n"
+        "POPS GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RAX\n"
+        "JUMPIFNEQ %%NULL_TO_INT_TNN GF@%%RBX string@nil\n"
         "PUSHS int@0\n"
         "JUMP %%NULL_TO_INT_END\n"
 
         "LABEL %%NULL_TO_INT_TNN\n"
-        "PUSHS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
 
         "LABEL %%NULL_TO_INT_END\n"
+        "CALL %%STACK_SWAP\n"
         "RETURN\n");
 }
 
-void generateNormalizeNumericTypesFunction() {
+void generateNormalizeTypes() {
     printf(
-        "LABEL %%NORMALIZE_NUMERIC_TYPES\n"
+        "LABEL %%NORMALIZE_TYPES\n"
         "CALL %%NULL_TO_INT\n"
         "POPS GF@%%RAX\n"
         "POPS GF@%%RBX\n"
@@ -107,6 +109,61 @@ void generateNormalizeNumericTypesFunction() {
         "PUSHS GF@%%RAX\n"
         "TYPE GF@%%RAX GF@%%RAX\n"
         "TYPE GF@%%RBX GF@%%RBX\n"
+
+        "JUMPIFEQ %%NORMALIZE_TYPES-MATCH GF@%%RAX GF@%%RBX\n"
+        // Types aren't mathing
+        // Verify that types are numeric for RAX
+        "JUMPIFEQ %%NORMALIZE_TYPES-TEST-RBX GF@%%RAX string@int\n"
+        "JUMPIFEQ %%NORMALIZE_TYPES-TEST-RBX GF@%%RAX string@float\n"
+        "EXIT int@7\n"
+
+        // Verify that types are numeric for RBX
+        "LABEL %%NORMALIZE_TYPES-TEST-RBX\n"
+        "JUMPIFEQ %%NORMALIZE_TYPES-MISSMATCH GF@%%RBX string@int\n"
+        "JUMPIFEQ %%NORMALIZE_TYPES-MISSMATCH GF@%%RBX string@float\n"
+        "EXIT int@7\n"
+
+        // If types are numeric and not matching, it means that on is int and the other
+        // float. In that case we want to convert to floats.
+        "LABEL %%NORMALIZE_TYPES-MISSMATCH\n"
+        "JUMPIFEQ %%NORMALIZE_TYPES-CONV-EBX GF@%%RAX string@float\n"
+        "POPS GF@%%RAX\n"
+        "INT2FLOAT GF@%%RAX GF@%%RAX\n"
+        "PUSHS GF@%%RAX\n"
+        "JUMP %%NORMALIZE_TYPES-END\n"
+
+        "LABEL %%NORMALIZE_TYPES-CONV-EBX\n"
+        "POPS GF@%%RAX\n"
+        "POPS GF@%%RBX\n"
+        "INT2FLOAT GF@%%RBX GF@%%RBX\n"
+        "PUSHS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
+        "JUMP %%NORMALIZE_TYPES-END\n"
+
+        // Types are already matching!
+        "LABEL %%NORMALIZE_TYPES-MATCH\n"
+        // Check if they matching their matching type is even numeric
+        "JUMPIFEQ %%NORMALIZE_TYPES-END GF@%%RAX string@int\n"
+        "JUMPIFEQ %%NORMALIZE_TYPES-END GF@%%RAX string@float\n"
+        "RETURN\n"
+
+        "LABEL %%NORMALIZE_TYPES-END\n"
+        "RETURN\n");
+}
+
+void generateNormalizeNumericTypesFunction() {
+    printf(
+        "LABEL %%NORMALIZE_NUMERIC_TYPES\n"
+        "BREAK\n"
+        "CALL %%NULL_TO_INT\n"
+        "BREAK\n"
+        "POPS GF@%%RAX\n"
+        "POPS GF@%%RBX\n"
+        "PUSHS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
+        "TYPE GF@%%RAX GF@%%RAX\n"
+        "TYPE GF@%%RBX GF@%%RBX\n"
+
         "JUMPIFEQ %%NORMALIZE_NUMERIC_TYPES-MATCH GF@%%RAX GF@%%RBX\n"
         // Types aren't mathing
         // Verify that types are numeric for RAX
@@ -261,8 +318,13 @@ void generateLess() {
         "PUSHS GF@%%RAX\n"
         "TYPE GF@%%RAX GF@%%RAX\n"
         "TYPE GF@%%RBX GF@%%RBX\n"
-        "JUMPIFEQ %%LESS-FALSE GF@%%RAX nil@nil\n"
-        "JUMPIFEQ %%LESS-FALSE GF@%%RBX nil@nil\n"
+        "JUMPIFEQ %%LESS-FALSE GF@%%RAX string@nil\n"
+        "JUMPIFEQ %%LESS-FALSE GF@%%RBX string@nil\n"
+        "CALL %%NORMALIZE_TYPES\n"
+        "POPS GF@%%RAX\n"
+        "POPS GF@%%RBX\n"
+        "PUSHS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
         "LTS\n"
         "RETURN\n"
 
@@ -287,6 +349,20 @@ void generateEmptyStringToInt() {
 
         "LABEL %%EMPTY_STRINGS_TO_INT-NONEMPTY\n"
         "EXIT int@7\n");
+}
+
+void generateNullToString() {
+    printf("LABEL %%NULL_TO_STR\n"
+            "POPS GF@%%RAX\n"
+            "TYPE GF@%%RBX GF@%%RAX\n"
+            "JUMPIFEQ %%NULL_TO_STR-NULL GF@%%RBX string@nil\n"
+            "PUSHS GF@%%RAX\n"
+            "RETURN\n"
+
+            "LABEL %%NULL_TO_STR-NULL\n"
+            "PUSHS string@\n"
+            "RETURN\n"
+    );
 }
 
 void generateLessEqual() {
@@ -341,8 +417,13 @@ void generateGreat() {
         "PUSHS GF@%%RAX\n"
         "TYPE GF@%%RAX GF@%%RAX\n"
         "TYPE GF@%%RBX GF@%%RBX\n"
-        "JUMPIFEQ %%GREAT-FALSE GF@%%RAX nil@nil\n"
-        "JUMPIFEQ %%GREAT-FALSE GF@%%RBX nil@nil\n"
+        "JUMPIFEQ %%GREAT-FALSE GF@%%RAX string@nil\n"
+        "JUMPIFEQ %%GREAT-FALSE GF@%%RBX string@nil\n"
+        "CALL %%NORMALIZE_TYPES\n"
+        "POPS GF@%%RAX\n"
+        "POPS GF@%%RBX\n"
+        "PUSHS GF@%%RBX\n"
+        "PUSHS GF@%%RAX\n"
         "GTS\n"
         "RETURN\n"
 
@@ -577,10 +658,12 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
 
             case CAT:
                 printf(
+                    "CALL %%NULL_TO_STR\n"
                     "PUSHS string@string\n"
                     "CALL %%ENFORCE_TYPES\n"
                     "CALL %%STACK_SWAP\n"
 
+                    "CALL %%NULL_TO_STR\n"
                     "PUSHS string@string\n"
                     "CALL %%ENFORCE_TYPES\n"
                     "POPS gf@%%RBX\n"

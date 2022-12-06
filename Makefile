@@ -40,6 +40,10 @@ run: $(TARGET)
 
 int: $(TARGET)
 	cat $(RUN_FILE_PATH) | ./$< $(RUN_FLAGS) > prog.ifj && \
+	./ic22int prog.ifj
+
+intv: $(TARGET)
+	cat $(RUN_FILE_PATH) | ./$< $(RUN_FLAGS) > prog.ifj && \
 	./ic22int -v prog.ifj
 
 test: $(TARGET)
