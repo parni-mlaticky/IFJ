@@ -520,24 +520,21 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                         break;
                     case STRING:
                         ;
-                        int newSize = countEscapeSequences(root->term.stringLit) * 5 * sizeof(char);
-                        char *newString = calloc(strlen(root->term.stringLit) * sizeof(char) + newSize + 4*sizeof(char), 1);
-                        char buffer[7] = {'\0', };
+                        printf("PUSHS string@");
+                        //char buffer[7] = {'\0', };
                         for (size_t i = 0; root->term.stringLit[i] != '\0'; i++) {
                             if ((root->term.stringLit[i] >= 0 && root->term.stringLit[i] <= 32) || root->term.stringLit[i] == 35 || root->term.stringLit[i] == 92) {
                                 if(root->term.stringLit[i] < 10){
-                                    sprintf(buffer, "\\00%d", root->term.stringLit[i]);
+                                    printf("\\00%d", root->term.stringLit[i]);
                                 }
                                 else{
-                                    sprintf(buffer, "\\0%d", root->term.stringLit[i]);
+                                    printf("\\0%d", root->term.stringLit[i]);
                                 }
                             } else {
-                                sprintf(buffer, "%c", root->term.stringLit[i]);
+                                printf("%c", root->term.stringLit[i]);
                             }
-                            strcat(newString, buffer);
                         }
-
-                        printf("PUSHS string@%s\n", newString);
+                        printf("\n");
                         break;
                     case NULL_T:
                         printf("PUSHS nil@nil\n");

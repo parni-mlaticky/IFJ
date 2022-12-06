@@ -136,7 +136,6 @@ EscapeSeqState process_str_escape_sequence(char* c, charList* buffer, EscapeSeqS
                     // Convert to byte and return it
                     char* string = charListToString(buffer);
                     *c = (char) strtol(string, NULL, 16);
-                    fprintf(stderr, "\nHEX HEX HEX %c\n", *c);
                     free(string);
                     charListDispose(buffer);
                     return ESS_FINAL;
