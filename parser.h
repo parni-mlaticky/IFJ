@@ -97,7 +97,7 @@ Token* getNextToken(tokList* tl);
 bool compareLexTypes(Token* inputTerminal, Lex stackTerminal);
 
 /**
- * @brief checks the lex type of stack and input terminal
+ * @brief compares strings of stack and input terminal
  *
  * @param inputTerminal input terminal
  * @param stackTerminal stack terminal
