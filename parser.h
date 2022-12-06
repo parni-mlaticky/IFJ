@@ -30,7 +30,7 @@ typedef enum {
 
 /**
  * @brief passes through the whole source code in order to check for
- * function definition syntax errors, to fill up the table os symbols
+ * function definition syntax errors, to fill up the symtable
  *
  * @param tl list of all tokens
  * @return true if no syntax error occurred, exits otherwise
@@ -38,7 +38,7 @@ typedef enum {
 bool firstPass(tokList* tl);
 
 /**
- * @brief parses source code into list of tokens, inits table of symbols,
+ * @brief parses source code into list of tokens, inits symtable,
  * generates starter ASM code
  *
  * @param file PHP source code (stdin)
@@ -97,7 +97,7 @@ Token* getNextToken(tokList* tl);
 bool compareLexTypes(Token* inputTerminal, Lex stackTerminal);
 
 /**
- * @brief checks if input terminal string equals to input terminal string
+ * @brief checks the lex type of stack and input terminal
  *
  * @param inputTerminal input terminal
  * @param stackTerminal stack terminal
@@ -106,18 +106,15 @@ bool compareLexTypes(Token* inputTerminal, Lex stackTerminal);
 bool compareTerminalStrings(Token* inputTerminal, char* stackTerminal);
 
 /**
- * @brief descents into program expansion
+ * @brief descends into program expansion
  *
  * @param tl list of all tokens
  * @return true if programExpansion returns true, false otherwise
  */
 bool recursiveDescent(tokList* tl);
 
-// TODO: delete?
-dataType dataTypeCompatibilityCheckOrConversion(Nonterminal* nt1, stackElement* operator, Nonterminal * nt2);
-
 /**
- * @brief processes variable definitions, inserts them into the table of symbols
+ * @brief processes variable definitions, inserts them into the symtable
  *
  * @param expTree expression tree
  * @param symtable table of symbols
@@ -166,7 +163,7 @@ bool endTokenExpansion(tokList* tl);
 
 /**
  * @brief checks if block statement expands to script stop, end token,
- * right curly brace (recursivelly)
+ * right curly brace (recursively)
  *
  * @param tl list of all tokens
  * @param func function
@@ -177,7 +174,7 @@ bool blockSTListExpansion(tokList* tl, function* func);
 bool blockSTExpansion(tokList* tl, function* func);
 
 /**
- * @brief expands function definition, creates ASM for it
+ * @brief expands function definition, generates code for it
  *
  * @param tl list of all tokens
  * @return true if expands as expected
@@ -185,7 +182,7 @@ bool blockSTExpansion(tokList* tl, function* func);
 bool functionDefStExpansion(tokList* tl);
 
 /**
- * @brief expands if statement, creates ASM for it
+ * @brief expands if statement, generates code for it
  *
  * @param tl list of all tokens
  * @param func function
@@ -194,7 +191,7 @@ bool functionDefStExpansion(tokList* tl);
 bool ifStExpansion(tokList* tl, function* func);
 
 /**
- * @brief expands while statement, creates ASM for it
+ * @brief expands while statement, generates code for it
  *
  * @param tl list of all tokens
  * @param func function
@@ -203,7 +200,7 @@ bool ifStExpansion(tokList* tl, function* func);
 bool whileStExpansion(tokList* tl, function* func);
 
 /**
- * @brief expands return statement, creates ASM for it
+ * @brief expands return statement, generates code for it
  *
  * @param tl list of all tokens
  * @param func function
@@ -241,10 +238,10 @@ bool paramListExpansion(tokList* tl, varList* args);
 /**
  * @brief expands type (of input parameter or function return)
  *
- * @param tl lit of alltokens
- * @param returnType pointer to variable to set the type to
- * @param nullable pointer to variable to set if type is nullable
- * @param isReturnType if returned type is type, that function returns
+ * @param tl lit of all tokens
+ * @param returnType return type
+ * @param nullable if dataType is nullable
+ * @param isReturnType if type of function return
  * @return true if typeName expansion returns true
  */
 bool typeExpansion(tokList* tl, dataType* returnType, bool* nullable, bool isReturnType);
@@ -253,7 +250,7 @@ bool typeExpansion(tokList* tl, dataType* returnType, bool* nullable, bool isRet
  * @brief
  *
  * @param tl list of all tokens
- * @param questionMark question mark was set
+ * @param questionMark question mark before type name
  * @param returnType pointer to variable to set the type to
  * @param isReturnType if returned type is type, that function returns
  * @return true if expands as expected
@@ -291,7 +288,7 @@ void terminalToDataType(Token* t, dataType* type);
  * 
  * @param tl list of all tokens
  * @param finalNonterm variable to return the final nonterminal to
- * @param isFuncArg true if is is function argument
+ * @param isFuncArg is function argument
  * @return true if parsing passes without any errors
  */
 bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg);
