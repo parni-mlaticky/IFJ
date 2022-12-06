@@ -537,7 +537,7 @@ Nonterminal* createExprNonterminal(Nonterminal* left, Nonterminal* right, termin
 }
 
 
-bool precParser(tokList* tl, Nonterminal** finalNonterm){
+bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
     bool result = false;
     stack s;
     stackInit(&s);
@@ -594,13 +594,12 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
                     nextToken = tokListGetValue(tl);       // should be '('
 
                     while(nextToken->lex != PAR_R) {
-
                         //unclosed function call
                         if(nextToken->lex == END) {
                             syntaxError(nextToken, "precParser ')' missing at the end of a function call");
                         }
-                    //fprintf(stderr, "tl.active is: %d\n", tl->active->data->lex);
-                    if(precParser(tl, &nonTerm)) {
+
+                    if(precParser(tl, &nonTerm, true)) {
                         nontermListAppend(args, nonTerm);
                         nextToken = tokListGetValue(tl);
 
@@ -609,7 +608,6 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
                         }
         
                         nextToken = getNextToken(tl);
-                        //fprintf(stderr, "next token is: %d\n", nextToken->lex);
                     } else {
                         syntaxError(nextToken, "precParser precParser returned false error");
                     }
@@ -650,6 +648,9 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm){
         }
     }
     if(containsOnlyTopNonterm(&s) && (token->lex == PAR_R || token->lex == COMMA)){
+        if(!isFuncArg && token->lex == COMMA){
+            syntaxError(token, "Unexpected ,");
+        }
         result = true;
     }
     if((containsOnlyTopNonterm(&s) || stackIsEmpty(&s)) && token->lex == SEMICOLON){
@@ -817,7 +818,7 @@ bool blockSTExpansion(tokList* tl, function* func){
     Token* t = tokListGetValue(tl);
     if(compareLexTypes(t, VAR_ID)){
         Nonterminal* expTree;
-        blockSt = precParser(tl, &expTree);
+        blockSt = precParser(tl, &expTree, false);
 
         processPossibleVariableDefinition(expTree, localSymtable);
 
@@ -833,7 +834,7 @@ bool blockSTExpansion(tokList* tl, function* func){
         else if(compareTerminalStrings(t, "function")) blockSt = false;
         else{ 
             Nonterminal* expTree;
-            blockSt = precParser(tl, &expTree);
+            blockSt = precParser(tl, &expTree, false);
             processPossibleVariableDefinition(expTree, localSymtable);
             t = getNextToken(tl);
             generateExpressionCode(expTree, false, localSymtable, &symtable);
@@ -843,7 +844,7 @@ bool blockSTExpansion(tokList* tl, function* func){
     }
     else {
         Nonterminal* expTree;
-        blockSt = precParser(tl, &expTree);
+        blockSt = precParser(tl, &expTree, false);
         processPossibleVariableDefinition(expTree, localSymtable);
         t = getNextToken(tl);
         generateExpressionCode(expTree, false, localSymtable, &symtable);
@@ -887,7 +888,7 @@ bool STExpansion(tokList* tl){
     Token* t = tokListGetValue(tl);
     if(compareLexTypes(t, VAR_ID)){
         Nonterminal* expTree;
-        St = precParser(tl, &expTree);
+        St = precParser(tl, &expTree, false);
         processPossibleVariableDefinition(expTree, &symtable);
         t = getNextToken(tl);
         generateExpressionCode(expTree, false, &symtable, &symtable);
@@ -901,7 +902,7 @@ bool STExpansion(tokList* tl){
         else if(compareTerminalStrings(t, "return")) St = returnStExpansion(tl, NULL);
         else{
             Nonterminal* expTree;
-            St = precParser(tl, &expTree);
+            St = precParser(tl, &expTree, false);
             processPossibleVariableDefinition(expTree, &symtable);
             t = getNextToken(tl);
             generateExpressionCode(expTree, false, &symtable, &symtable);
@@ -912,7 +913,7 @@ bool STExpansion(tokList* tl){
 
     else{
         Nonterminal* expTree;
-        St = precParser(tl, &expTree);
+        St = precParser(tl, &expTree, false);
         processPossibleVariableDefinition(expTree, &symtable);
         t = getNextToken(tl);
         generateExpressionCode(expTree, false, &symtable, &symtable);
@@ -963,7 +964,7 @@ bool functionDefStExpansion(tokList* tl){
 
     fDefSt = blockExpansion(tl, funkce);
     if(funkce->returnType != NULL_T){
-        printf("JUMP %%ERROR_6\n"); // FIXME this should be a special label that we will jump to i guess
+        printf("JUMP %%ERROR_4\n"); //
     }
     else{
         printf("PUSHS nil@nil\n");
@@ -995,7 +996,7 @@ bool ifStExpansion(tokList* tl, function* func){
     ifSt = ifSt && compareLexTypes(t, PAR_L);
 
     Nonterminal* expTree;
-    ifSt = ifSt && precParser(tl, &expTree);
+    ifSt = ifSt && precParser(tl, &expTree, false);
     processPossibleVariableDefinition(expTree, localSymtab);
     generateExpressionCode(expTree, false, localSymtab, &symtable);
 
@@ -1040,7 +1041,7 @@ bool whileStExpansion(tokList* tl, function* func){
     whileSt = whileSt && compareLexTypes(t, PAR_L);
 
     Nonterminal* expTree;
-    whileSt = whileSt && precParser(tl, &expTree);
+    whileSt = whileSt && precParser(tl, &expTree, false);
     processPossibleVariableDefinition(expTree, localSymtable);
 
     printf("LABEL WHILE%d\n", currentWhileId);
@@ -1071,7 +1072,7 @@ bool returnStExpansion(tokList* tl, function* func){
     returnSt = compareTerminalStrings(t, "return");
 
     Nonterminal* expTree;
-    returnSt = returnSt && precParser(tl, &expTree);
+    returnSt = returnSt && precParser(tl, &expTree, false);
     processPossibleVariableDefinition(expTree, localSymtable);
     generateExpressionCode(expTree, false, localSymtable, &symtable);
 

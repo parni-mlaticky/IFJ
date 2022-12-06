@@ -88,7 +88,7 @@ void debugPrintExprTree(Nonterminal* root);
 
 void terminalToDataType(Token* t, dataType* type);
 
-bool precParser(tokList* tl, Nonterminal** finalNonterm);
+bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg);
 
 Nonterminal* createIntLiteralNonterminal(int value);
 void addBuiltinFunctionsToSymtable();
