@@ -27,6 +27,7 @@ void generateGreatEqual();
 void generateEmptyStringToInt();
 void generateNormalizeTypes();
 void generateNullToString();
+void generateRelationTypecast();
 void defineFunctionVars(ht_table_t symtable);
 int countEscapeSequences(char *string);
 char* enumTypeToStr(dataType dType);
