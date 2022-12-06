@@ -14,9 +14,7 @@
 #include "token.h"
 #include "variable.h"
 
-#define KEYWORD_COUNT 11
-
-typedef enum {
+typedef enum{
     P_LESS,
     P_GREATER,
     P_EQ
@@ -281,7 +279,7 @@ bool isRelOperator(terminalType tType);
  */
 void debugPrintExprTree(Nonterminal* root);
 
-void terminalToDataType(Token* t, dataType* type);
+dataType terminalToDataType(Token* t);
 
 /**
  * @brief 

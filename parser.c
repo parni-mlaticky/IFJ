@@ -2,11 +2,6 @@
 
 static ht_table_t symtable;
 
-const char* keywords[] = { "if", "else", "declare", "function",
-                           "while", "int", "float", "void",
-                           "string", "null", "return"};
-
-
 
 void addFuncToSymtable(char* name, varList* argList, bool nullable, dataType returnType, ht_table_t* localTable){
     symtableElem* functionElem = malloc(sizeof(symtableElem));
@@ -71,7 +66,8 @@ void addBuiltinFunctionsToSymtable(){
     addFuncToSymtable("chr", argList, false, STRING, NULL);
 }
 
-// ONE BIG FIXME
+// goes through the token list and finds function definitions
+// adds the functions to the symtable and skips the rest of the tokens
 bool firstPass(tokList* tl){
     char* funcName = NULL;
     bool fPass = true;
@@ -82,6 +78,8 @@ bool firstPass(tokList* tl){
     symtableElem* var;
     tokListFirst(tl);
     Token* t = tokListGetValue(tl);
+    
+    // goes through the token list until it finds the "function" keyword
     while(!compareLexTypes(t, END) && !compareLexTypes(t, SCRIPT_STOP)){
         while(!compareLexTypes(t, FUN_ID) || !compareTerminalStrings(t, "function")){
             if(compareLexTypes(t, END) || compareLexTypes(t, SCRIPT_STOP)) break;
@@ -89,6 +87,7 @@ bool firstPass(tokList* tl){
         }
         if(compareLexTypes(t, END) || compareLexTypes(t, SCRIPT_STOP)) break;
 
+        // function found: expand the function definition and add its arguments to args
         args = malloc(sizeof(varList));
         varListInit(args);
         fPass = compareTerminalStrings(t, "function");
@@ -103,49 +102,56 @@ bool firstPass(tokList* tl){
         t = getNextToken(tl);
         fPass = fPass && compareLexTypes(t, COLON) && typeExpansion(tl, &returnType, &nullable, true);
         if(!fPass) syntaxError(NULL, "Function definition error\n");
+        // if function already in symtable, exit
         if(ht_get(&symtable, funcName)) semanticError(3);
 
-    localTable = calloc(sizeof(ht_table_t), 1);
-    varListFirst(args);
-    variable varIter;
-    while(args->active){ // FIXME LIST ISACTIVE METHOD!!!
-        varIter = varListGetValue(args);
-        if(!varIter.name){
-            syntaxError(NULL, "error in params in function declaration");
-        }
-        var = ht_get(localTable, varIter.name);
-        if(var) semanticError(8);
-        var = malloc(sizeof(symtableElem));
-        var->type = VARIABLE;
-        var->v = variable_clone(&varIter);
-        ht_insert(localTable, varIter.name, var);
-        varListNext(args);
-    }
-        addFuncToSymtable(funcName, args, nullable, returnType, localTable);
+        // create local symtable for the function
+        localTable = calloc(sizeof(ht_table_t), 1);
+        varListFirst(args);
+        variable varIter;
 
-        Token* iter = getNextToken(tl);
-        int count = 0;
-        if(!compareLexTypes(iter, CBR_L)){
-            syntaxError(NULL, "Error in function definition\n");
+        // insert function arguments into symtable as local variables of the function
+        while(args->active){ // FIXME LIST ISACTIVE METHOD!!!
+            varIter = varListGetValue(args);
+            if(!varIter.name){
+                syntaxError(NULL, "error in params in function declaration");
+            }
+            var = ht_get(localTable, varIter.name);
+            if(var) semanticError(8);
+            var = malloc(sizeof(symtableElem));
+            var->type = VARIABLE;
+            var->v = variable_clone(&varIter);
+            ht_insert(localTable, varIter.name, var);
+            varListNext(args);
         }
+            // finally, add function to symtable
+            addFuncToSymtable(funcName, args, nullable, returnType, localTable);
 
-        if(!fPass){
-            syntaxError(NULL, "Error in function definition\n");
-        }
-        count++;
-        while(count > 0){
-            iter = getNextToken(tl);
-            if(compareLexTypes(iter, CBR_L)){
-                count++;
-            }
-            else if(compareLexTypes(iter, CBR_R)){
-                count--;
-            }
-            else if(!iter){
+
+            // skip the function body
+            Token* iter = getNextToken(tl);
+            int count = 0;
+            if(!compareLexTypes(iter, CBR_L)){
                 syntaxError(NULL, "Error in function definition\n");
             }
-        }
-        t = getNextToken(tl);
+
+            if(!fPass){
+                syntaxError(NULL, "Error in function definition\n");
+            }
+            count++;
+            while(count > 0){
+                iter = getNextToken(tl);
+                if(compareLexTypes(iter, CBR_L)){
+                    count++;
+                }
+                else if(compareLexTypes(iter, CBR_R)){
+                    count--;
+                }
+                else if(!iter){
+                    syntaxError(NULL, "Error in function definition\n");
+                }
+            }
+            t = getNextToken(tl);
     }    
     return fPass;
 }
@@ -192,6 +198,7 @@ terminalType lexEnumToTerminalEnum(Lex lex){
 opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
     terminalType lexToTerm = lexEnumToTerminalEnum(nextTerm);
     switch (stackTerm){
+        // empty stack case
         case DOLLAR:
             if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV
             || lexToTerm == MUL || lexToTerm == AS || lexToTerm == EQ
@@ -203,6 +210,7 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             else syntaxError(NULL, "getPrecedence DOLLAR case error");
             break;
 
+        // operand
         case OP:
             if(lexToTerm == PLUS || lexToTerm == MINUS || lexToTerm == CAT || lexToTerm == DIV 
             || lexToTerm == MUL || lexToTerm == AS || lexToTerm == EQ
@@ -303,11 +311,11 @@ opPrecedence getPrecedence(terminalType stackTerm, Lex nextTerm){
             else syntaxError(NULL, "getPrecedence RPAR case error");
             break;
     }
-
     exit(99);
 }
 
-// Operators are >= 4 in the enum
+// checks if elem is operator
+// Operators are enums that are >= 4
 bool isOperator(stackElement* elem){
     if(elem->data.terminal->tType >= 4){
         return true;
@@ -315,7 +323,10 @@ bool isOperator(stackElement* elem){
     return false;
 }
 
+// checks if the stack elements that are being reduced in precedence parsing can be reduced
+// according to the rules of the grammar
 expressionRule precParseCheckRule(stackElement* elem1, stackElement* elem2, stackElement* elem3){
+    // only elem1 is set
     if(elem1 && !elem2 && !elem3){
         // Rule E => i
         if(elem1->data.etype == TERMINAL && elem1->data.terminal->tType == OP){
@@ -323,6 +334,7 @@ expressionRule precParseCheckRule(stackElement* elem1, stackElement* elem2, stac
         }
         else syntaxError(NULL, "precParseCheckRule error");
     }
+    // all elements are set
     if(elem1 && elem2 && elem3){
         // rule E => (E)
         if(elem1->data.terminal->tType == LPAR && elem2->data.etype == NONTERMINAL && elem3->data.terminal->tType == RPAR){
@@ -333,9 +345,12 @@ expressionRule precParseCheckRule(stackElement* elem1, stackElement* elem2, stac
             return EXP_OP_EXP;
         }
     }
+    // anything else is wrong
     return false;
 }
 
+// checks if elem is a value that can be assigned to
+// (aka it is a variable ID)
 bool checkIfLValue(stackElement* elem){
     if(elem->data.etype == NONTERMINAL){
         if(elem->data.nonterminal->NTType == VAR_ID_TERM){
@@ -347,20 +362,26 @@ bool checkIfLValue(stackElement* elem){
 
 
 
+// finds handle and reduces the stack content above the handle according to the
+// expression grammar rules, or throw syntax error
 void precParseReduction(stack* s, bool* relOpInExp){
     stackElement* handle = findHandle(s);
     if(!handle) syntaxError(NULL, "precParseReduction handle missing error");
     stackElement* iter = handle;
     int count = -1;
+    // stard at handle, iterate through the stack towards the top
     while(iter){
         iter = iter->prev;
         count++;
     }
+    // if only 1 element above handle, expect rule E => i
     if(count == 1){
         if(precParseCheckRule(handle->prev, NULL, NULL) == EXP_TERM){
             stackElement* tmp = malloc(sizeof(stackElement));
             memcpy(tmp, handle->prev, sizeof(stackElement));
             stackMultiPop(s, count+1);
+
+            // chedck the type of the terminal and create a corresponding nonterminal that gets pushed after reduction
             switch(tmp->data.terminal->token->lex){
                 case INT_LIT:
                     ;
@@ -405,20 +426,22 @@ void precParseReduction(stack* s, bool* relOpInExp){
         else syntaxError(NULL, "precParseReduction precParseCheckRule error");
     }
    
+   // 3 items above handle, expect rule E => <E> <OP> <E> or E => (E)
     else if(count == 3){
+        // rule E => <E> <OP> <E>
         if(precParseCheckRule(handle->prev, handle->prev->prev, handle->prev->prev->prev) == EXP_OP_EXP){
+            // since there can only be 1 relation operator in expression, set this to true
+            // later another rel operator is detected, throw syntax error during grammar check
             if(isRelOperator(handle->prev->prev->data.terminal->tType)) *relOpInExp = true;
             
-            
+            // check if this is an attempt to assign to something that cant be assigned to
             if(handle->prev->prev->data.terminal->tType == AS){
                 if(!checkIfLValue(handle->prev)){
                     syntaxError(NULL, "precParseReduction checkIfLValue error");
                 }
-                else{
-                    // put variable in symtable TODO
-                }
             }
 
+            // copy the stack nonterminals since they get popped before the new nonterminal gets pushed
             Nonterminal* operand1 = malloc(sizeof(Nonterminal));
             Nonterminal* operand2 = malloc(sizeof(Nonterminal));
             memcpy(operand1, handle->prev->data.nonterminal, sizeof(Nonterminal));
@@ -427,12 +450,13 @@ void precParseReduction(stack* s, bool* relOpInExp){
             stackElement* op = malloc(sizeof(stackElement));
             memcpy(op, handle->prev->prev, sizeof(stackElement));
 
-            
+            // create the new nonterminal, pop stack content above handle and push new nonterminal
             Nonterminal* nonterm = createExprNonterminal(operand1, operand2, op->data.terminal->tType);
             stackMultiPop(s, count+1);
             stackPushNonterminal(s, nonterm);
             free(op);
         }
+        // Rule E => (E)
         else if(precParseCheckRule(handle->prev, handle->prev->prev, handle->prev->prev->prev) == EXP_PAR){
             Nonterminal* exp = malloc(sizeof(Nonterminal));
             memcpy(exp, handle->prev->prev->data.nonterminal, sizeof(Nonterminal));
@@ -442,6 +466,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
     }   
     else syntaxError(NULL, "precParseReduction count error");      
 }
+
 
 Nonterminal* createIntLiteralNonterminal(int value){
     Nonterminal* intLit = malloc(sizeof(Nonterminal));
@@ -536,7 +561,7 @@ Nonterminal* createExprNonterminal(Nonterminal* left, Nonterminal* right, termin
     return newNonterminal;
 }
 
-
+// parses expressions bottom-up using the precedence parsing method
 bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
     bool result = false;
     stack s;
@@ -544,20 +569,28 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
 
     // because expression like $a === $b === $c is invalid
     bool relOpInExp = false;
-    // counts parentheses in the expression to differentiate between the end par of if() and parentheses in the expression
+    // counts parentheses in the expression to differentiate between the end parentheses
+    // that belong to the expression and parentheses that do not
     int parCount = 0;
 
+    // push starting terminal (bottom of stack)
     stackPushTerminal(&s, DOLLAR, NULL);
     bool emptyExpr = true;
     Token* token;
     stackElement* top;
+
+    // this loop reads tokens in the expression and calls functions
+    // that  
     while(1){
         token = tokListGetValue(tl);
         if(!token) syntaxError(token, "precParser missing Token error");
+        // check if a symbol that ends an expression is encountered
         if(((compareLexTypes(token, PAR_R) || compareLexTypes(token, SEMICOLON) || compareLexTypes(token, COMMA)) && parCount == 0)){
+            // check if everything on the stack has been reduced, then break
             if(containsOnlyTopNonterm(&s) || stackIsEmpty(&s)){
                 break;
             }
+            // else continue reducing whatever is on the stack until only the root of the expression remains
             else{
                 while(!containsOnlyTopNonterm(&s)){
                     precParseReduction(&s, &relOpInExp);
@@ -568,14 +601,21 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
         }
 
         top = getTopTerminal(&s);
+        // if rel operator is already in expression and this is another rel operator, semantic error
         if(isRelOperator(lexEnumToTerminalEnum(token->lex)) && relOpInExp) semanticError(7);
         opPrecedence prec = getPrecedence(top->data.terminal->tType, token->lex);
+
+        // lower precedence (< in prec. table)
         if(prec == P_LESS){
             stackInsertHandle(&s);
-            // TODO
-            if(token->lex == FUN_ID){
+            // operand is a function call - recursively call precParser on the function arguments
+            // and add the resulting expressions to args list, then push funcall to stack
+            if(compareLexTypes(token, FUN_ID)){
                 if(compareTerminalStrings(token, "null")){
                     stackPushTerminal(&s, OP, token);
+                }
+                else if(isKeyword(token)){
+                    syntaxError(token, "unexpected keyword in expression");
                 }
                 else{
                     Token *nextToken = getNextToken(tl); // name of the function
@@ -612,41 +652,34 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
                         syntaxError(nextToken, "precParser precParser returned false error");
                     }
                     }
-                    //recursively syntax check args, ',' (probably)
-                    //check for rpar
-                    //stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
                     stackPushFuncallTerminal(&s, token, args);
                 }
-            }
-            else if(token->lex == STRING_LIT || token->lex == INT_LIT || token->lex == FLOAT_LIT){
-                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
-            }
-            else if(token->lex == VAR_ID){
-                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
-            }
-            else if(token->lex == PAR_L){
-                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
-                parCount++;
-            }
-            else if(token->lex == PAR_R){
-                stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
-                parCount--;
-            }
+            } // if token is a function
+            
+
+            // if token is not a function call, just push it to the stack
             else{
                 stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
-            }   
+            }
+            if(compareLexTypes(token, PAR_L)){
+                parCount++;
+            }  
             getNextToken(tl);
         }
+        // greater precedence (> in prec. table)
         else if(prec == P_GREATER){
             precParseReduction(&s, &relOpInExp);
             emptyExpr = false;
         }
+        // equal precedence (= in prec. table)
         else if(prec == P_EQ){
             stackPushTerminal(&s, lexEnumToTerminalEnum(token->lex), token);
             parCount--;
             getNextToken(tl);
         }
-    }
+    } // end of loop that parses the expression
+
+
     if(containsOnlyTopNonterm(&s) && (token->lex == PAR_R || token->lex == COMMA)){
         if(!isFuncArg && token->lex == COMMA){
             syntaxError(token, "Unexpected ,");
@@ -656,10 +689,11 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
     if((containsOnlyTopNonterm(&s) || stackIsEmpty(&s)) && token->lex == SEMICOLON){
         result = true;
     }
+    // return the final nonterminal through the pointer argument
     if(result && !emptyExpr){
         *finalNonterm = s.top->data.nonterminal;
-        // FIXME compileTimeExpressionEval(*finalNonterm);
     }
+    // if expr is empty, create an empty nonterminal
     else{
         Nonterminal* empty = malloc(sizeof(Nonterminal));
         empty->NTType = EMPTY;
@@ -668,6 +702,9 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
     return result;
 }
 
+// collects all tokens in the file into a list and calls first pass and recursive descent on it
+// also calls some functions which generate IFJcode22 code for internal helper functions and builtin functions
+// and initializes the symtable
 bool parse_file(FILE* file) {
     bool result = false;
     tokList* list = malloc(sizeof(tokList));
@@ -688,6 +725,7 @@ bool parse_file(FILE* file) {
     result = firstPass(list);
     tokListFirst(list);
 
+    // "Main" function (main body of the IFJ22 program)
     printf("LABEL %%PROG_START\n");
     printf("CREATEFRAME\n" "PUSHFRAME\n");
     printf("CALL %%MAIN_VAR_DEFS\n");
@@ -703,10 +741,13 @@ bool parse_file(FILE* file) {
 }
 
 
-
 bool isKeyword(Token* t){
+    const char* keywords[] = { "if", "else", "declare", "function",
+                           "while", "int", "float", "void",
+                           "string", "null", "return"};
+    int keywordCount = sizeof(keywords) / sizeof(char*);
     if(!compareLexTypes(t, FUN_ID)) return false;
-    for(int i = 0; i < KEYWORD_COUNT; i++){
+    for(int i = 0; i < keywordCount; i++){
         if(!strcmp(keywords[i], t->string)){
             return true;
         }
@@ -749,7 +790,7 @@ bool recursiveDescent(tokList* tl){
     return progExpansion(tl);
 }
 
-
+// <PROG> => "<?php" <DECLARE_ST> <ST_LIST> <END_TOKEN>
 bool progExpansion(tokList* tl){
     bool prog = false;
     Token* t = getNextToken(tl);
@@ -758,6 +799,7 @@ bool progExpansion(tokList* tl){
     return prog;
 }
 
+// <DECLARE_ST> => "declare(strict_types=1);" 
 bool declareStExpansion(tokList* tl){
     bool declareSt;
     Token* t;
@@ -787,6 +829,7 @@ bool declareStExpansion(tokList* tl){
     return declareSt;
 }
 
+// <ST_LIST> => <ST> <ST_LIST>
 bool STListExpansion(tokList* tl){
     bool STList = false;
     Token* t = tokListGetValue(tl);
@@ -797,6 +840,7 @@ bool STListExpansion(tokList* tl){
     return STList;
 }
 
+// <BLOCK_ST_LIST> => <BLOCK_ST> <BLOCK_ST_LIST>
 bool blockSTListExpansion(tokList* tl, function* func){
     bool blockSTList = false;
     Token* t = tokListGetValue(tl);
@@ -807,13 +851,13 @@ bool blockSTListExpansion(tokList* tl, function* func){
     return blockSTList;
 }
 
+// <BLOCK_ST> =>  <IF_ST>, <WHILE_ST>, etc.. but not <FUNCTION_DEF>
 bool blockSTExpansion(tokList* tl, function* func){
     bool blockSt = false;
     ht_table_t* localSymtable = &symtable;
     if(func){
         localSymtable = func->localTable;
     }
-
 
     Token* t = tokListGetValue(tl);
     if(compareLexTypes(t, VAR_ID)){
@@ -867,9 +911,7 @@ void processPossibleVariableDefinition(Nonterminal* expTree, ht_table_t* symtabl
     
     // Check if variable was already added into the table
     symtableElem* elem = ht_get(symtable, var->term.var->name);
-
-    //varList* definedVars = malloc(sizeof(varList));
-    //varListInit(definedVars);
+    
     if (elem == NULL) {
         // CREATING VAR LIST FOR DEFINING AT THE END OF THE FUNCTION
         elem = malloc(sizeof(symtableElem));
@@ -883,9 +925,11 @@ void processPossibleVariableDefinition(Nonterminal* expTree, ht_table_t* symtabl
     //vars = definedVars;
 }
 
+// <STATEMENT> => <FUNCTION_DEF>, <WHILE_ST>, etc..
 bool STExpansion(tokList* tl){
     bool St = false;
     Token* t = tokListGetValue(tl);
+    // statement starting with var_id => call prec parser
     if(compareLexTypes(t, VAR_ID)){
         Nonterminal* expTree;
         St = precParser(tl, &expTree, false);
@@ -895,11 +939,13 @@ bool STExpansion(tokList* tl){
         St = St && compareLexTypes(t, SEMICOLON);
         printf("POPS GF@%%RAX\n");
     }
+    // statement starting with one of these keywords => expand these statements
     else if(compareLexTypes(t, FUN_ID)){
         if(compareTerminalStrings(t, "function")) St = functionDefStExpansion(tl);
         else if(compareTerminalStrings(t, "if")) St = ifStExpansion(tl, NULL);
         else if(compareTerminalStrings(t, "while")) St = whileStExpansion(tl, NULL);
         else if(compareTerminalStrings(t, "return")) St = returnStExpansion(tl, NULL);
+        // statement starting with function identifier => call prec parser
         else{
             Nonterminal* expTree;
             St = precParser(tl, &expTree, false);
@@ -911,6 +957,7 @@ bool STExpansion(tokList* tl){
         }     
     }
 
+    // statement starting with something else (constant) => call prec parser
     else{
         Nonterminal* expTree;
         St = precParser(tl, &expTree, false);
@@ -923,6 +970,7 @@ bool STExpansion(tokList* tl){
     return St;
 }
 
+// <END> => "?>" or nothing (epsilon)
 bool endTokenExpansion(tokList* tl){
     bool end = false;
     Token* t = tokListGetValue(tl);
@@ -930,20 +978,27 @@ bool endTokenExpansion(tokList* tl){
     return end;
 }
 
+// <FUNCTION_DEF> => "function <ID> (<PARAMS>) : <?><TYPE> {<BLOCK>}"
 bool functionDefStExpansion(tokList* tl){
     bool fDefSt = false;
     char* funcName = NULL;
     getNextToken(tl);
     Token* t = getNextToken(tl);
     funcName = t->string;
+    // since function code is generated inbetween main body statements, 
+    // this jump skips the function
     printf("JUMP _%s_FUNC_END\n", funcName);
     printf("LABEL _%s\n", funcName);
+    // call a function that defines all local variables in the local frame
     printf("CALL _%s_VAR_DEFS\n", funcName);
-    function* funkce = ht_get(&symtable, funcName)->f;
-    varListFirst(funkce->args);
+    // get the function from symtable (added there in first pass)
+    function* func = ht_get(&symtable, funcName)->f;
+    varListFirst(func->args);
     variable argsIter;
-    for(int i = 0; i < funkce->args->len; i++){
-        argsIter = varListGetValue(funkce->args);
+    // iterate through the args list and generate code for runtime checking of passed types
+    // exit with code 4 if types dont match the definition
+    for(int i = 0; i < func->args->len; i++){
+        argsIter = varListGetValue(func->args);
         printf("POPS LF@%s\n", argsIter.name);
         printf("PUSHS LF@%s\n", argsIter.name);
         printf("PUSHS string@%s\n", enumTypeToStr(argsIter.dType));
@@ -955,37 +1010,44 @@ bool functionDefStExpansion(tokList* tl){
         }
         printf("PUSHS bool@false\n");
         printf("JUMPIFEQS %%ERROR_4\n");
-        varListNext(funkce->args);
+        varListNext(func->args);
     }
 
+    // skip the rest of the function head (any syntax errors would have been caught in first pass)
     while(tl->active->data->lex != CBR_L){
         getNextToken(tl);
     }
 
-    fDefSt = blockExpansion(tl, funkce);
-    if(funkce->returnType != NULL_T){
+    // expand the body of the function
+    fDefSt = blockExpansion(tl, func);
+
+    // if the return type isnt void and there is no return statement in the function,
+    // this jump is executed and the program exits with code 4
+    if(func->returnType != NULL_T){
         printf("JUMP %%ERROR_4\n"); //
     }
+    // if the return type is void, it actually just returns null on function body end
     else{
         printf("PUSHS nil@nil\n");
         printf("RETURN\n");
     }
-    printf("LABEL _%s_VAR_DEFS\n", funkce->functionName);
-    defineFunctionVars(*funkce->localTable);
+
+    // label that the function jumps to at the start to define local variables, then jumps back
+    printf("LABEL _%s_VAR_DEFS\n", func->functionName);
+    defineFunctionVars(*func->localTable);
     printf("RETURN\n");
-    printf("LABEL _%s_FUNC_END\n", funkce->functionName);
+    printf("LABEL _%s_FUNC_END\n", func->functionName);
     return fDefSt;
 }
 
+// <IF_ST> => if(<EXPR>) {<BLOCK>} else {<BLOCK>}
 bool ifStExpansion(tokList* tl, function* func){
-    ht_table_t* localSymtab;
+    ht_table_t* localSymtab = &symtable;
     if(func){
         localSymtab = func->localTable;
     }
-    else{
-        localSymtab = &symtable;
-    }
 
+    // static variable used for unique label generation for different if statements
     static int ifCount = 0;
     int currentIfId = ifCount;
     ifCount++; 
@@ -1000,6 +1062,7 @@ bool ifStExpansion(tokList* tl, function* func){
     processPossibleVariableDefinition(expTree, localSymtab);
     generateExpressionCode(expTree, false, localSymtab, &symtable);
 
+    // convert the expression to bool in runtime
     printf("CALL %%TO_BOOL\n");
     printf("PUSHS bool@false\n");
     printf("JUMPIFEQS ELSE%d\n", currentIfId);
@@ -1023,12 +1086,13 @@ bool ifStExpansion(tokList* tl, function* func){
     return ifSt;
 }
 
+// <WHILE_ST> => while (<EXPR>) {<BLOCK>}
 bool whileStExpansion(tokList* tl, function* func){
-
     ht_table_t* localSymtable = &symtable;
     if(func){
         localSymtable = func->localTable;
     }
+    // static variable used for unique label generation for different while statements
     static int whileCount = 0;
     int currentWhileId = whileCount;
     whileCount++;
@@ -1060,6 +1124,7 @@ bool whileStExpansion(tokList* tl, function* func){
     return whileSt;
 }
 
+// <RETURN_ST> => "RETURN" <EXPR>
 bool returnStExpansion(tokList* tl, function* func){
     ht_table_t* localSymtable = &symtable;
     if(func){
@@ -1083,11 +1148,13 @@ bool returnStExpansion(tokList* tl, function* func){
     if(!func){
         printf("EXIT int@0\n");
     }
+    // func type void but expression not empty => err 6
     else if(func->returnType == NULL_T){
         if(expTree->NTType != EMPTY){
             semanticError(6);
         }
     }
+    // func type not void but expression empty => err 6
     else{
         if(expTree->NTType == EMPTY){
             semanticError(6);
@@ -1097,50 +1164,50 @@ bool returnStExpansion(tokList* tl, function* func){
     return returnSt;
 }
 
+// <VAR> => VAR_ID
 bool varExpansion(tokList* tl, variable* var){
     Token* t = getNextToken(tl);
-    //fprintf(stderr, "EXPANDING VARIABLE WITH NAME: %s\n", t->string);
     var->name = t->string;
     return compareLexTypes(t, VAR_ID);
 }
 
+// <PARAMS> => <PARAM> <PARAM_LIST>
+// <PARAMS> => epsilon
 bool paramsExpansion(tokList* tl, varList* args){
     bool params = false;
     Token* t;
     t = tokListGetValue(tl);
-    // () blank function call
     if(compareLexTypes(t, PAR_R)) params = true;
     else{
         variable* var = calloc(sizeof(variable), 1);
-
         //var type
-        //dataType variableType;
         params = typeExpansion(tl, &var->dType, &var->nullable, false);
         //other var info
         params = params && varExpansion(tl, var) && paramListExpansion(tl, args);
-        //fprintf(stderr, "APPENDING VARIABLE TO ARGS WITH NAME: %s\n", var->name);
         varListAppend(args, *var);
     }
     return params;
 }
 
+// <PARAM_LIST> => "," <PARAM>
+// <PARAM_LIST> => epsilon
 bool paramListExpansion(tokList* tl, varList* args){
     bool paramList = false;
     Token* t;
     t = tokListGetValue(tl);
+    // epsilon rule
     if(compareLexTypes(t, PAR_R)) paramList = true;
+    // the other rule
     else{
         variable* var = calloc(sizeof(variable), 1);
-
-        //dataType variableType;
         t = getNextToken(tl);
         paramList = compareLexTypes(t, COMMA) && typeExpansion(tl, &var->dType, &var->nullable, false) && varExpansion(tl, var) && paramListExpansion(tl, args);
-        //fprintf(stderr, "APPENDING VARIABLE TO ARGS WITH NAME: %s\n", var->name);
         varListAppend(args, *var);
     }
     return paramList;
 }
 
+// <TYPE> => <?> <TYPE_NAME>
 bool typeExpansion(tokList* tl, dataType* returnType, bool* nullable, bool isReturnType){
     bool type = false;
     bool questionMark = false;
@@ -1156,33 +1223,36 @@ bool typeExpansion(tokList* tl, dataType* returnType, bool* nullable, bool isRet
     return type;
 }
 
-
+// <TYPE_NAME> => "int", "float", "string", "void"
 bool typeNameExpansion(tokList* tl, bool questionMark, dataType* returnType, bool isReturnType){
     bool typeName;
     Token* t;
     t = getNextToken(tl);
     typeName = compareLexTypes(t, FUN_ID);
+
+    // if this is a return type expansion, void is allowed
     if(isReturnType) {
     typeName = typeName && (compareTerminalStrings(t, "int") || compareTerminalStrings(t, "float") || 
                             (compareTerminalStrings(t, "void") && !questionMark) || compareTerminalStrings(t, "string"));
-    } else {
+    } 
+    // otherwise void is not allowed
+    else {
        typeName = typeName && (compareTerminalStrings(t, "int") || compareTerminalStrings(t, "float") || compareTerminalStrings(t, "string"));
     }
-    //FIXME: returnType is not bool
-    //TODO:
-    terminalToDataType(t, returnType);
+    *returnType = terminalToDataType(t);
     return typeName;                  
 }
 
-void terminalToDataType(Token* t, dataType* type) {
-  // fprintf(stderr, "SETTING DATATYPE OF TOKEN TO %s\n", t->string);
-  if(compareTerminalStrings(t, "int"))    {*type = INT; return;}
-  if(compareTerminalStrings(t, "float"))  {*type = FLOAT; return;}
-  //FIXME:
-  if(compareTerminalStrings(t, "void"))   {*type = NULL_T; return;}
-  if(compareTerminalStrings(t, "string")) {*type = STRING; return;}
+// converts string terminal to dtype enum
+dataType terminalToDataType(Token* t) {
+  if(compareTerminalStrings(t, "int"))    return INT;
+  if(compareTerminalStrings(t, "float"))  return FLOAT;
+  if(compareTerminalStrings(t, "void"))   return NULL_T;
+  if(compareTerminalStrings(t, "string")) return STRING;
+  return 0;
 }
 
+// <BLOCK> => <BLOCK_ST_LIST>
 bool blockExpansion(tokList* tl, function* func){
     bool block = false;
     Token* t;
@@ -1201,49 +1271,6 @@ bool isRelOperator(terminalType tType){
     }
     return false;
 }
-
-void debugPrintExprTree(Nonterminal* root){
-    if(!root->expr.left && !root->expr.right){
-        switch(root->NTType){
-            case VAR_ID_TERM:
-                printf("%s", root->term.var->name);
-                break;
-            case LITERAL_TERM:
-                switch(root->dType){
-                    case STRING:
-                        fprintf(stderr, "%s", root->term.stringLit);
-                        break;
-                    case INT:
-                        fprintf(stderr, "%lld", root->term.integerLit);
-                        break;
-                    case FLOAT:
-                        fprintf(stderr, "%lf", root->term.floatLit);
-                        break;  
-                    default:
-                        break;        
-                }
-            default: break;    
-        }
-    }
-    else{
-        printf("\tEXPR\n");
-        debugPrintExprTree(root->expr.left);
-        switch(root->expr.op){
-            case PLUS:
-                fprintf(stderr, "\t+\t");
-                break;
-            case MINUS:
-                fprintf(stderr, "\t-\t");
-                break;
-            case AS:
-                fprintf(stderr, "\t=\t");
-                break;
-            default: break;
-        }
-        debugPrintExprTree(root->expr.right);
-    }
-}
-
 
 /* void compileTimeExpressionEval(Nonterminal* expTree){
     if(!expTree){
