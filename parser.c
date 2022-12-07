@@ -117,7 +117,7 @@ bool firstPass(tokList* tl){
         variable varIter;
 
         // insert function arguments into symtable as local variables of the function
-        while(args->active){ // FIXME LIST ISACTIVE METHOD!!!
+        while(varListIsActive(args)){
             varIter = varListGetValue(args);
             if(!varIter.name){
                 syntaxError(NULL, "error in params in function declaration");
@@ -771,7 +771,7 @@ void syntaxError(Token* errorToken, char* errMessage){
 }
 
 Token* getNextToken(tokList* tl){
-    Token* t = tl->active ? tokListGetValue(tl) : NULL;
+    Token* t = tokListIsActive(tl) ? tokListGetValue(tl) : NULL;
     tokListNext(tl);
     return t;
 }
