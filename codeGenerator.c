@@ -20,6 +20,7 @@ void generateStarterAsm() {
     generateNormalizeNumericTypesFunction();
     generateNullToIntFunction();
     generateBuiltInFunctions();
+    generateRelationTypecast();
     generateEmptyStringToInt();
     generateNormalizeTypes();
     generateCompareDtypes();
@@ -363,15 +364,55 @@ void generateNullToString() {
     );
 }
 
+void generateRelationTypecast() {
+    printf("LABEL %%RELATION_TYPECAST\n"
+           "POPS GF@%%RAX\n"
+
+           // Check if the first operand is null.
+           "TYPE GF@%%RBX GF@%%RAX\n"
+           "JUMPIFEQ %%RELATION_TYPECAST-NULL GF@%%RBX string@nil\n"
+           // It's not, nothing happens.
+           "PUSHS GF@%%RAX\n"
+           "RETURN\n"
+
+           "LABEL %%RELATION_TYPECAST-NULL\n"
+           "POPS GF@%%RAX\n"
+           "TYPE GF@%%RBX GF@%%RAX\n"
+
+           // Test all combinations of second operand.
+           "JUMPIFEQ %%RELATION_TYPECAST-STRING GF@%%RBX string@string\n"
+           "JUMPIFEQ %%RELATION_TYPECAST-INT GF@%%RBX string@int\n"
+           "JUMPIFEQ %%RELATION_TYPECAST-FLOAT GF@%%RBX string@float\n"
+           "PUSHS int@0\n"
+           "PUSHS GF@%%RAX\n"
+           "RETURN\n"
+
+           "LABEL %%RELATION_TYPECAST-STRING\n"
+           "PUSHS string@\n"
+           "PUSHS GF@%%RAX\n"
+           "RETURN\n"
+
+           "LABEL %%RELATION_TYPECAST-INT\n"
+           "PUSHS int@0\n"
+           "PUSHS GF@%%RAX\n"
+           "RETURN\n"
+
+           "LABEL %%RELATION_TYPECAST-FLOAT\n"
+           "PUSHS float@0x0p+0\n"
+           "PUSHS GF@%%RAX\n"
+           "RETURN\n"
+
+    );
+}
+
 void generateLessEqual() {
     printf(
         "LABEL %%LESS_EQUAL\n"
-        "CALL %%EMPTY_STRINGS_TO_INT\n"
+        "CALL %%RELATION_TYPECAST\n"
         "CALL %%STACK_SWAP\n"
-        "CALL %%EMPTY_STRINGS_TO_INT\n"
+        "CALL %%RELATION_TYPECAST\n"
         "CALL %%STACK_SWAP\n"
-        "CALL %%NULL_TO_INT\n"
-        "CALL %%NORMALIZE_NUMERIC_TYPES\n"
+        "CALL %%NORMALIZE_TYPES\n"
 
         "GTS\n"
         "POPS GF@%%RAX\n"
@@ -387,12 +428,11 @@ void generateLessEqual() {
 void generateGreatEqual() {
     printf(
         "LABEL %%GREAT_EQUAL\n"
-        "CALL %%EMPTY_STRINGS_TO_INT\n"
+        "CALL %%RELATION_TYPECAST\n"
         "CALL %%STACK_SWAP\n"
-        "CALL %%EMPTY_STRINGS_TO_INT\n"
+        "CALL %%RELATION_TYPECAST\n"
         "CALL %%STACK_SWAP\n"
-        "CALL %%NULL_TO_INT\n"
-        "CALL %%NORMALIZE_NUMERIC_TYPES\n"
+        "CALL %%NORMALIZE_TYPES\n"
 
         "LTS\n"
         "POPS GF@%%RAX\n"

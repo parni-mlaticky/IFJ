@@ -8,4 +8,10 @@ typedef struct variable{
     bool nullable;
 } variable;
 
+/**
+ * @brief copies a given variable into a newly allocated memory
+ * 
+ * @param var variable to clone
+ * @return variable* variable clone
+ */
 variable* variable_clone(variable* var);
