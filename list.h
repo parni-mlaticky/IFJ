@@ -36,6 +36,7 @@
     void TYPE_NAME##ListNext(TYPE_NAME##List* list);                 \
     void TYPE_NAME##ListPrev(TYPE_NAME##List* list);                 \
     TYPE TYPE_NAME##ListGetValue(TYPE_NAME##List* list);             \
+    bool TYPE_NAME##ListIsActive(TYPE_NAME##List* list);             \
 
 
 GENERIC_LIST_H(struct Nonterminal*, nonterm)

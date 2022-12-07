@@ -69,8 +69,14 @@
     }                                                                           \
     TYPE TYPE_NAME##ListGetValue(TYPE_NAME##List* list){                        \
         return list->active->data;                                              \
+    }                                                                           \
+    bool TYPE_NAME##ListIsActive(TYPE_NAME##List* list){                        \
+        if(list->active){                                                       \
+            return true;                                                        \
+        }                                                                       \
+        return false;                                                           \
     }
-
+                                                                               
 GENERIC_LIST(char, char)
 GENERIC_LIST(Token*, tok)
 GENERIC_LIST(variable, var)

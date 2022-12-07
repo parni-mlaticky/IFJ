@@ -532,11 +532,11 @@ Token scan_next_token(FILE *file, bool expect_prolog)
             charListAppend(&str, '\\');
             charListFirst(&memory.memory);
             if (memory.memory.len != 0) {
-                if (memory.memory.active != NULL) {
+                if (charListIsActive(&memory.memory)) {
                     while (1) {
                         charListAppend(&str, charListGetValue(&memory.memory));
                         charListNext(&memory.memory);
-                        if (memory.memory.active == NULL) break;
+                        if (!charListIsActive(&memory.memory)) break;
                     }
                 }
             }
