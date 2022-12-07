@@ -12,7 +12,7 @@ int main() {
     FILE* source_file = stdin;
     bool res = parse_file(source_file);
     if(res){
-        fprintf(stderr, "Syntax is OK\n");
+        //fprintf(stderr, "Syntax is OK\n");
         exit(0);
     } 
     else {
