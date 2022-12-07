@@ -1,6 +1,10 @@
+/**
+ * @file codeGenerator.c
+ * @author Vladimír Hucovič, Ondřej Zobal, Petr Kolouch
+ * @brief implementation of code generation
+ * 
+ */
 #include "codeGenerator.h"
-
-
 
 void generateStarterAsm() {
     printf(".IFJcode22\n");

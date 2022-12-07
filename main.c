@@ -1,3 +1,9 @@
+/**
+ * @file main.c
+ * @author Vladimír Hucovič, Ondřej Zobal
+ * @brief main
+ * 
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include "parser.h"

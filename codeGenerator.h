@@ -1,3 +1,9 @@
+/**
+ * @file codeGenerator.h
+ * @author Vladimír Hucovič, Ondřej Zobal
+ * @brief header file for code generation functions
+ * 
+ */
 #pragma once
 #include "Nonterminal.h"
 #include "symtable.h"

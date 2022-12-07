@@ -1,3 +1,9 @@
+/**
+ * @file semanticError.h
+ * @author Vladimír Hucovič
+ * @brief header file for semantic error function
+ * 
+ */
 #pragma once
 #include <stdlib.h>
 #include <stdio.h>

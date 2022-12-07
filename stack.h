@@ -1,4 +1,9 @@
-
+/**
+ * @file stack.h
+ * @author Vladimír Hucovič
+ * @brief header file for stack structure, functions
+ * 
+ */
 #pragma once
 #include <stdbool.h>
 #include <stdlib.h>

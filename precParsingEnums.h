@@ -1,3 +1,9 @@
+/**
+ * @file precParsingEnums.h
+ * @author Vladimír Hucovič
+ * @brief header file for precedence parsing enumerators
+ * 
+ */
 #pragma once
 
 typedef enum elemType{

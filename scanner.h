@@ -1,3 +1,9 @@
+/**
+ * @file scanner.h
+ * @author Ondřej Zobal, Petr Kolouch
+ * @brief Header files for scanner functions
+ * 
+ */
 #ifndef SCANNER_H
 #define SCANNER_H
 

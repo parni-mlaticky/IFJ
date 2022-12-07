@@ -1,3 +1,9 @@
+/**
+ * @file misc.c
+ * @author Vladimír Hucovič
+ * @brief implementation of miscellaneous functions
+ * 
+ */
 #include "misc.h"
 #include "string.h"
 #include "stdlib.h"

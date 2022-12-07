@@ -1,3 +1,9 @@
+/**
+ * @file Nonterminal.h
+ * @author Vladimír Hucovič
+ * @brief header file for terminal, nonterminal structure
+ * 
+ */
 #pragma once
 #include "precParsingEnums.h"
 #include "variable.h"

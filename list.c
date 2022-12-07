@@ -1,3 +1,9 @@
+/**
+ * @file list.c
+ * @author Vladimír Hucovič
+ * @brief implementation of double linked list
+ * 
+ */
 #include "list.h"
 #include "variable.h"
 

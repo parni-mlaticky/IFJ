@@ -1,3 +1,9 @@
+/**
+ * @file variable.h
+ * @author Vladimír Hucovič
+ * @brief header file for variable structure, functions for symtable
+ * 
+ */
 #pragma once
 #include <stdbool.h>
 #include "precParsingEnums.h"

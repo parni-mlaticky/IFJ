@@ -1,3 +1,9 @@
+/**
+ * @file scanner.c
+ * @author Ondřej Zobal, Petr Kolouch, Marek Havel, Vladimír Hucovič
+ * @brief implementation of scanner functions
+ * 
+ */
 #include "scanner.h"
 #include "lex.h"
 #include <stdlib.h>
