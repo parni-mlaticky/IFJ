@@ -1,12 +1,12 @@
 #pragma once
 #include "Nonterminal.h"
-#include "hashtable.h"
+#include "symtable.h"
 #include "funcall.h"
 #include "list.h"
 #include "semanticError.h"
 
-void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_table_t *localSymtable,
-                             ht_table_t* globalSymtable);
+void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, sym_table_t *localSymtable,
+                            sym_table_t* globalSymtable);
 void generateToBoolFunction();
 void generateToFloatFunction();
 void generateEnforceTypesFunction();
@@ -28,7 +28,7 @@ void generateEmptyStringToInt();
 void generateNormalizeTypes();
 void generateNullToString();
 void generateRelationTypecast();
-void defineFunctionVars(ht_table_t symtable);
+void defineFunctionVars(sym_table_t symtable);
 
 /**
  * @brief count number of escape sequences in a string
