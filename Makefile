@@ -3,95 +3,55 @@ CFLAGS := -std=c11 -Wall -Wextra -pedantic
 LIBS :=
 TARGET := ./ifj22
 
-
-BUILD_DIR := ./increment/
+BUILD_DIR := ./
 RUN_FLAGS :=
 RUN_FILE_PATH := test-scripts/test.php
 
+# Adds optimizations or debug info
 ifeq ($(release),1)
 	CFLAGS += -o3
 else
 	CFLAGS += -g3
 endif
 
+# Makes the compilation crash on warnings
 ifeq ($(strict),1)
 	CFLAGS += -Werror
 endif
 
-
+# Generating a list of object files that will need to be complied
 OBJ = $(patsubst %.c,$(BUILD_DIR)%.o,$(wildcard *.c))
 
-# Git doesn't store empty dirs so make sure BUILD_DIR is created
-$(shell mkdir $(BUILD_DIR) 2> /dev/null || true)
 
-.PHONY: clean run all test
+.PHONY: clean run all int intv
 
-# Just so make all works as well
+# Pople like the "all"
 all: $(TARGET)
 
+# Linking
 $(TARGET): $(OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) && echo "OK" >/dev/stderr
 
+# Building all the object files
 $(BUILD_DIR)%.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+# Build and run
 run: $(TARGET)
 	cat $(RUN_FILE_PATH) | ./$< $(RUN_FLAGS)
 
+# Run and interpret
 int: $(TARGET)
 	cat $(RUN_FILE_PATH) | ./$< $(RUN_FLAGS) > prog.ifj && \
 	./ic22int prog.ifj
 
+# Run and interpret in debug mode
 intv: $(TARGET)
 	cat $(RUN_FILE_PATH) | ./$< $(RUN_FLAGS) > prog.ifj && \
 	./ic22int -v prog.ifj
 
-test: $(TARGET)
-	$(TARGET) test-scripts/test.php >test.php.output
-	@printf "`tput bold`Testing test.php`tput sgr0`"
-	@echo ""
-	@echo "test.php Output differences:"
-	@echo ""
-	-@diff --color -su test.php.output test-scripts/outputs/test.output || echo -e "\e[31mTEST FAILED\e[0m"
-	@rm -f test.php.output
-	@echo ""
-
-	$(TARGET) test-scripts/escape_sequences_hex_octal.php | od -x >escape_sequences_hex_octal.php.output
-	@printf "`tput bold`Testing escape sequences hex octal`tput sgr0`"
-	@echo ""
-	@echo "escape_sequences_hex_octal.php Output differences:"
-	@echo ""
-	-@diff --color -su escape_sequences_hex_octal.php.output test-scripts/outputs/escape_sequences_hex_octal.output || echo -e "\e[31mTEST FAILED\e[0m"
-	@rm -f escape_sequences_hex_octal.php.output
-	@echo ""
-
-
-	$(TARGET) test-scripts/escape_sequences.php >escape_sequences.php.output
-	@printf "`tput bold`Testing escape sequences`tput sgr0`"
-	@echo ""
-	@echo "escape_sequences.php Output differences:"
-	@echo ""
-	-@diff --color -su escape_sequences.php.output test-scripts/outputs/escape_sequences.output || echo -e "\e[31mTEST FAILED\e[0m"
-	@rm -f escape_sequences.php.output
-	@echo ""
-
-	$(TARGET) test-scripts/escape_sequences_error.php >escape_sequences_error.php.output
-	@printf "`tput bold`Testing escape sequences error`tput sgr0`"
-	@echo ""
-	@echo "escape_sequences_error.php Output differences:"
-	@echo ""
-	-@diff --color -su escape_sequences_error.php.output test-scripts/outputs/escape_sequences_error.output || echo -e "\e[31mTEST FAILED\e[0m"
-	@rm -f escape_sequences_error.php.output
-
-
-
-
+# As good as new
 clean:
 	rm -f $(BUILD_DIR)/*.o
 	rm $(TARGET)
-
-
-parserTest:
-	gcc parser.c scanner.c stack.c precparsetest.c list.c -o precparsetest -g
-
 
