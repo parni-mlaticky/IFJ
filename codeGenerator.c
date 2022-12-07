@@ -35,9 +35,9 @@ void generateStarterAsm() {
     generateLess();
 }
 
-void defineFunctionVars(ht_table_t symtable) {
-    ht_item_t* iter;
-    for (int i = 0; i < MAX_HT_SIZE; i++) {
+void defineFunctionVars(sym_table_t symtable) {
+    symtable_item_t* iter;
+    for (int i = 0; i < MAX_SYMTABLE_SIZE; i++) {
         iter = symtable[i];
         if (iter) {
             while(iter){
@@ -529,7 +529,7 @@ int countEscapeSequences(char *string) {
     return count;
 }
 
-void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_table_t *localSymtable, ht_table_t* globalSymtable) {
+void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, sym_table_t *localSymtable, sym_table_t* globalSymtable) {
     if (!root) {
         return;
     }
@@ -540,7 +540,7 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                 break;
             case VAR_ID_TERM:
                 if (!isLeftSideOfAssignment) {
-                    if(!ht_get(localSymtable, root->term.var->name)){
+                    if(!symtable_get(localSymtable, root->term.var->name)){
                         semanticError(5);
                     }
                     printf("TYPE GF@%%RBX LF@%s\n", root->term.var->name);
@@ -590,7 +590,7 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                 // clean up??
                 // profit??
                 ;
-                symtableElem *func = ht_get(globalSymtable, root->term.func->funId);
+                symtableElem *func = symtable_get(globalSymtable, root->term.func->funId);
                 // Function doesnt exist
                 if (!func) semanticError(3);
 

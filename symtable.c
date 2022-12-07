@@ -1,8 +1,8 @@
-#include "hashtable.h"
+#include "symtable.h"
 #include <stdlib.h>
 #include <string.h>
 
-int HT_SIZE = MAX_HT_SIZE;
+int SYMTABLE_SIZE = MAX_SYMTABLE_SIZE;
 
 int get_hash(char *key) {
   int result = 1;
@@ -10,18 +10,18 @@ int get_hash(char *key) {
   for (int i = 0; i < length; i++) {
     result += key[i];
   }
-  return (result % HT_SIZE);
+  return (result % SYMTABLE_SIZE);
 }
 
-void ht_init(ht_table_t *table) {
-  for (int i = 0; i < MAX_HT_SIZE; i++){
+void symtable_init(sym_table_t *table) {
+  for (int i = 0; i < MAX_SYMTABLE_SIZE; i++){
 
     (*table)[i] = NULL;
   }
 }
 
-ht_item_t *ht_search(ht_table_t *table, char *key) {
-  ht_item_t* current = (*table)[get_hash(key)];
+symtable_item_t *symtable_search(sym_table_t *table, char *key) {
+  symtable_item_t* current = (*table)[get_hash(key)];
   while (current != NULL) {
     if (!strcmp(current->key, key)) {
       return current;
@@ -31,11 +31,11 @@ ht_item_t *ht_search(ht_table_t *table, char *key) {
   return NULL;
 }
 
-void ht_insert(ht_table_t *table, char *key, symtableElem* value) {
+void symtable_insert(sym_table_t *table, char *key, symtableElem* value) {
   int hash = get_hash(key);
 
   // Update the element if it already exists.
-  ht_item_t** current = &((*table)[hash]);
+  symtable_item_t** current = &((*table)[hash]);
   while (*current != NULL) {
     if (!strcmp((*current)->key, key)) {
       (*current)->value = value;
@@ -45,7 +45,7 @@ void ht_insert(ht_table_t *table, char *key, symtableElem* value) {
   }
 
   // Init the new element.
-  ht_item_t* new = malloc(sizeof(ht_item_t));
+  symtable_item_t* new = malloc(sizeof(symtable_item_t));
   char* new_key = malloc(strlen(key)+1);
   strcpy(new_key, key);
   new->key = new_key;
@@ -56,13 +56,13 @@ void ht_insert(ht_table_t *table, char *key, symtableElem* value) {
   (*table)[hash] = new;
 }
 
-symtableElem* ht_get(ht_table_t *table, char *key) {
-  ht_item_t* item = ht_search(table, key);
+symtableElem* symtable_get(sym_table_t *table, char *key) {
+  symtable_item_t* item = symtable_search(table, key);
   return item == NULL ? NULL : item->value;
 }
 
-void ht_delete(ht_table_t *table, char *key) {
-  ht_item_t** current = &(*table)[get_hash(key)];
+void symtable_delete(sym_table_t *table, char *key) {
+  symtable_item_t** current = &(*table)[get_hash(key)];
   if (current == NULL) return;
 
   while (strcmp((*current)->key, key)) {
@@ -70,17 +70,17 @@ void ht_delete(ht_table_t *table, char *key) {
     if (current == NULL) break;
   }
 
-  ht_item_t* delete = *current;
+  symtable_item_t* delete = *current;
   *current = (*current)->next;
   free(delete->key);
   free(delete);
 }
 
-void ht_delete_all(ht_table_t *table) {
-  for (int i = 0; i < HT_SIZE; i++) {
-    ht_item_t* current = (*table)[i];
+void symtable_delete_all(sym_table_t *table) {
+  for (int i = 0; i < SYMTABLE_SIZE; i++) {
+    symtable_item_t* current = (*table)[i];
     while (current != NULL) {
-      ht_item_t* old = current;
+      symtable_item_t* old = current;
       current = current->next;
       free(old->key);
       free(old);

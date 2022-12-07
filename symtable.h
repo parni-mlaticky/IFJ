@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef IAL_HASHTABLE_H
-#define IAL_HASHTABLE_H
+#ifndef SYMTABLE_H
+#define SYMTABLE_H
 
 #include <stdbool.h>
 #include "variable.h"
@@ -15,25 +15,25 @@
 
 
 // maximal size of hash table
-#define MAX_HT_SIZE 101
+#define MAX_SYMTABLE_SIZE 101
 
 // size of implemented table
-extern int HT_SIZE;
+extern int SYMTABLE_SIZE;
 
-typedef struct ht_item {
+typedef struct symtable_item {
   char* key;            // pair key
   struct symtableElem* value;          // pair value
-  struct ht_item *next; // pointer to next synonym
-} ht_item_t;
+  struct symtable_item *next; // pointer to next synonym
+} symtable_item_t;
 
 
-typedef ht_item_t* ht_table_t[MAX_HT_SIZE];
+typedef symtable_item_t* sym_table_t[MAX_SYMTABLE_SIZE];
 typedef struct {
   char* functionName;         // name of function
     dataType returnType;      // function return type
     bool nullable;            // is return type nullable
     varList* args;            // list of function args
-    ht_table_t* localTable;   // local hashtable (symtable)
+    sym_table_t* localTable;   // local hashtable (symtable)
 } function;
 
 typedef struct symtableElem{
@@ -61,16 +61,16 @@ int get_hash(char* key);
  * 
  * @param table table to init 
  */
-void ht_init(ht_table_t* table);
+void symtable_init(sym_table_t* table);
 
 /**
  * @brief searches for an item in the table
  * 
  * @param table table to search in
  * @param key key to search for
- * @return ht_item_t* pointer to item if found, null otherwise
+ * @return symtable_item_t* pointer to item if found, null otherwise
  */
-ht_item_t* ht_search(ht_table_t* table, char* key);
+symtable_item_t* symtable_search(sym_table_t* table, char* key);
 
 /**
  * @brief insert an item into the table
@@ -79,7 +79,7 @@ ht_item_t* ht_search(ht_table_t* table, char* key);
  * @param key key to insert
  * @param value value of the key
  */
-void ht_insert(ht_table_t* table, char* key, symtableElem* value);
+void symtable_insert(sym_table_t* table, char* key, symtableElem* value);
 
 /**
  * @brief searches for symtable elem in the table
@@ -88,7 +88,7 @@ void ht_insert(ht_table_t* table, char* key, symtableElem* value);
  * @param key key to search for
  * @return symtableElem* pointer to symtable element if found, null otherwise
  */
-symtableElem* ht_get(ht_table_t* table, char* key);
+symtableElem* symtable_get(sym_table_t* table, char* key);
 
 /**
  * @brief deletes an element from the table
@@ -96,13 +96,13 @@ symtableElem* ht_get(ht_table_t* table, char* key);
  * @param table table to delete in
  * @param key key to delete
  */
-void ht_delete(ht_table_t* table, char* key);
+void symtable_delete(sym_table_t* table, char* key);
 
 /**
  * @brief deletes all table items
  * 
  * @param table table to delete
  */
-void ht_delete_all(ht_table_t* table);
+void symtable_delete_all(sym_table_t* table);
 
 #endif
