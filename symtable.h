@@ -55,12 +55,15 @@ typedef struct symtableElem{
 } symtableElem;
 
 /**
+ * This implementation of the djb2 hash function was taken from:
+ * http://www.cse.yorku.ca/~oz/hash.html
+ *
  * @brief creates hash for key
  * 
  * @param key key to hash
  * @return int int hash
  */
-int get_hash(char* key);
+long get_hash(unsigned char* key);
 
 /**
  * @brief inits hash table
