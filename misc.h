@@ -1,6 +1,6 @@
 /**
  * @file misc.h
- * @author Vladimír Hucovič
+ * @author Vladimír Hucovič (xhucov00)
  * @brief header file for miscellaneous functions
  * 
  */

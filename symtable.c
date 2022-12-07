@@ -1,6 +1,6 @@
 /**
  * @file symtable.c
- * @author Vladimír Hucovič, Ondřej Zobal, Marek Havel
+ * @author Vladimír Hucovič (xhucov00), Ondřej Zobal (xzobal01), Marek Havel (xhavel46)
  * @brief implementation of symtable
  * 
  */

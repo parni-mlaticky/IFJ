@@ -1,6 +1,6 @@
 /**
  * @file lex.h
- * @author Petr Kolouch
+ * @author Petr Kolouch (xkolou05)
  * @brief header file for lex enum definition
  * 
  */

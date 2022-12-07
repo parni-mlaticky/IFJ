@@ -1,6 +1,6 @@
 /**
  * @file precParsingEnums.h
- * @author Vladimír Hucovič
+ * @author Vladimír Hucovič (xhucov00)
  * @brief header file for precedence parsing enumerators
  * 
  */
