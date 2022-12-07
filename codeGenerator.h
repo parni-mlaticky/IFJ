@@ -29,5 +29,19 @@ void generateNormalizeTypes();
 void generateNullToString();
 void generateRelationTypecast();
 void defineFunctionVars(ht_table_t symtable);
+
+/**
+ * @brief count number of escape sequences in a string
+ * 
+ * @param string string to check
+ * @return int number of sequences
+ */
 int countEscapeSequences(char *string);
+
+/**
+ * @brief converts enym dataType to string
+ * 
+ * @param dType dataType
+ * @return char* converted string
+ */
 char* enumTypeToStr(dataType dType);
