@@ -1,5 +1,5 @@
 /**
- * @file Nonterminal.h
+ * @file precParsingTerminalNonterminal.h
  * @author Vladimír Hucovič
  * @brief header file for terminal, nonterminal structure
  * 

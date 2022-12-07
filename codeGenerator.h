@@ -5,7 +5,7 @@
  * 
  */
 #pragma once
-#include "precParsingNonTerminal.h"
+#include "precParsingTerminalNonterminal.h"
 #include "symtable.h"
 #include "funcall.h"
 #include "list.h"
