@@ -11,13 +11,19 @@
 
 int SYMTABLE_SIZE = MAX_SYMTABLE_SIZE;
 
-int get_hash(char *key) {
-  int result = 1;
-  int length = strlen(key);
-  for (int i = 0; i < length; i++) {
-    result += key[i];
-  }
-  return (result % SYMTABLE_SIZE);
+/*
+ * This implementation of the djb2 hash function was taken from:
+ * http://www.cse.yorku.ca/~oz/hash.html
+*/
+long get_hash(unsigned char *key) {
+    unsigned long hash = 5381;
+    int c;
+
+    while ((c = *key++)) {
+        // hash * 33 + c
+        hash = ((hash << 5) + hash) + c;
+    }
+    return (hash % SYMTABLE_SIZE);
 }
 
 void symtable_init(sym_table_t *table) {
@@ -28,7 +34,7 @@ void symtable_init(sym_table_t *table) {
 }
 
 symtable_item_t *symtable_search(sym_table_t *table, char *key) {
-  symtable_item_t* current = (*table)[get_hash(key)];
+  symtable_item_t* current = (*table)[get_hash((unsigned char*) key)];
   while (current != NULL) {
     if (!strcmp(current->key, key)) {
       return current;
@@ -39,7 +45,7 @@ symtable_item_t *symtable_search(sym_table_t *table, char *key) {
 }
 
 void symtable_insert(sym_table_t *table, char *key, symtableElem* value) {
-  int hash = get_hash(key);
+  int hash = get_hash((unsigned char*) key);
 
   // Update the element if it already exists.
   symtable_item_t** current = &((*table)[hash]);
@@ -71,7 +77,7 @@ symtableElem* symtable_get(sym_table_t *table, char *key) {
 }
 
 void symtable_delete(sym_table_t *table, char *key) {
-  symtable_item_t** current = &(*table)[get_hash(key)];
+  symtable_item_t** current = &(*table)[get_hash((unsigned char *) key)];
   if (current == NULL) return;
 
   while (strcmp((*current)->key, key)) {
