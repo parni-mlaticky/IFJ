@@ -1,3 +1,9 @@
+/**
+ * @file parser.c
+ * @author Vladimír Hucovič, Ondřej Zobal, Petr Kolouch, Marek Havel
+ * @brief implementation of syntax analyzer
+ * 
+ */
 #include "parser.h"
 
 static sym_table_t symtable;

@@ -1,12 +1,7 @@
 /**
  * @file token.h
- * @author Petr Kolouch (xkolou05@stud.fit.vutbr.cz)
- * @brief header file for lex enum definition
- * @version 0.1
- * @date 2022-10-03
- * 
- * @copyright Copyright (c) 2022
- * 
+ * @author Petr Kolouch
+ * @brief header file for lexeme enum definition
  */
 
 #ifndef TOKEN_H

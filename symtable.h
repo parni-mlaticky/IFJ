@@ -1,3 +1,9 @@
+/**
+ * @file symtable.h
+ * @author Vladimír Hucovič, Petr Kolouch, Ondřej Zobal, Marek Havel
+ * @brief header file for symtable based on hash table
+ * 
+ */
 #pragma once
 
 #ifndef SYMTABLE_H

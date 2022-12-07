@@ -1,3 +1,9 @@
+/**
+ * @file stack.c
+ * @author Vladimír Hucovič
+ * @brief implementation of stack functions
+ * 
+ */
 #include "stack.h"
 
 void stackInit(stack* s){

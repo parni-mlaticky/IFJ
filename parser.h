@@ -1,3 +1,9 @@
+/**
+ * @file parser.h
+ * @author Vladimír Hucovič, Petr Kolouch, Marek Havel
+ * @brief header file for syntax analyzer
+ * 
+ */
 #pragma once
 #ifndef PARSER_H
 #define PARSER_H

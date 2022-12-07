@@ -1,3 +1,9 @@
+/**
+ * @file variable.c
+ * @author Vladimír Hucovič
+ * @brief Implementace funkcí pro proměnné
+ * 
+ */
 #include "variable.h"
 #include <string.h>
 #include <stdlib.h>

@@ -1,3 +1,9 @@
+/**
+ * @file symtable.c
+ * @author Vladimír Hucovič, Ondřej Zobal, Marek Havel
+ * @brief implementation of symtable
+ * 
+ */
 #include "symtable.h"
 #include <stdlib.h>
 #include <string.h>
