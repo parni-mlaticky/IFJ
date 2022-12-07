@@ -590,7 +590,6 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, sym_
                 symtableElem *func = symtable_get(globalSymtable, root->term.func->funId);
                 // Function doesnt exist
                 if (!func) semanticError(3);
-
                 // Function has the correct number of arguments OR it can have N arguments (write() for example)
                 else if((!func->f->args || func->f->args->len == root->term.func->args->len)){   
                     nontermListFirst(root->term.func->args);
@@ -601,6 +600,14 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, sym_
                         nontermListNext(root->term.func->args);
                     }
                     if(!func->f->args){
+                        printf("CREATEFRAME\n");
+                        for(int i = 0; i < root->term.func->args->len; i++){
+                            printf("DEFVAR TF@ARG%d\n", i);
+                            printf("POPS TF@ARG%d\n", i);
+                        }
+                        for(int i = 0; i < root->term.func->args->len; i++){
+                            printf("PUSHS TF@ARG%d\n", i);
+                        }
                         printf("PUSHS int@%d\n", root->term.func->args->len);
                     }
                     

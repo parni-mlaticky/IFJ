@@ -145,17 +145,19 @@ bool declareStExpansion(tokList* tl);
  * @brief expands statement list
  *
  * @param tl list of all tokens
+ * @param isInBlock true if the statement list is inside a block
  * @return true if expands as expected
  */
-bool STListExpansion(tokList* tl);
+bool STListExpansion(tokList* tl, function* func, bool isInBlock);
 
 /**
  * @brief expands statements
  *
  * @param tl list of all tokens
+ * @param isInBlock true if the statement is inside a block
  * @return true if expands as expected
  */
-bool STExpansion(tokList* tl);
+bool STExpansion(tokList* tl, function* func, bool isInBlock);
 
 /**
  * @brief check if token expands to script stop or end token
@@ -165,17 +167,6 @@ bool STExpansion(tokList* tl);
  */
 bool endTokenExpansion(tokList* tl);
 
-/**
- * @brief checks if block statement expands to script stop, end token,
- * right curly brace (recursively)
- *
- * @param tl list of all tokens
- * @param func function
- * @return true if expands as expected
- */
-bool blockSTListExpansion(tokList* tl, function* func);
-
-bool blockSTExpansion(tokList* tl, function* func);
 
 /**
  * @brief expands function definition, generates code for it
