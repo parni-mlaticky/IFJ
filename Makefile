@@ -6,6 +6,7 @@ TARGET := ./ifj22
 BUILD_DIR := ./
 RUN_FLAGS :=
 RUN_FILE_PATH := test-scripts/test.php
+ARCHIVE_NAME := xhucov00.tgz
 
 # Adds optimizations or debug info
 ifeq ($(release),1)
@@ -23,10 +24,10 @@ endif
 OBJ = $(patsubst %.c,$(BUILD_DIR)%.o,$(wildcard *.c))
 
 
-.PHONY: clean run all int intv
+.PHONY: clean run all int intv pack
 
 # Pople like the "all"
-all: $(TARGET)
+all: $(TARGET) pack
 
 # Linking
 $(TARGET): $(OBJ)
@@ -53,5 +54,11 @@ intv: $(TARGET)
 # As good as new
 clean:
 	rm -f $(BUILD_DIR)/*.o
-	rm $(TARGET)
+	rm $(TARGET) || true
+	rm $(ARCHIVE_NAME) || true
 
+$(ARCHIVE_NAME): Makefile *.c *.h dokumentace.pdf rozdeleni rozsireni
+	tar --gzip -cf $@ $^
+
+# Alias for making archives
+pack: $(ARCHIVE_NAME)
