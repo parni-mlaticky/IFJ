@@ -5,6 +5,7 @@
  * 
  */
 #include "stack.h"
+#include "misc.h"
 
 void stackInit(stack* s){
     s->top = NULL;
@@ -22,7 +23,9 @@ bool containsOnlyTopNonterm(stack* s){
 
 void stackPushFuncallTerminal(stack* s, Token* token, nontermList* args){
     stackElement* newElement = malloc(sizeof(stackElement));
+    CHECK_ALLOCATION(newElement)
     Terminal* terminal = malloc(sizeof(Terminal));
+    CHECK_ALLOCATION(terminal)
     terminal->tType = OP;
     terminal->token = token;
     newElement->data.terminal = terminal;
@@ -43,7 +46,9 @@ void stackPushFuncallTerminal(stack* s, Token* token, nontermList* args){
 
 void stackPushTerminal(stack* s, terminalType tType, Token* token){
     stackElement* newElement = malloc(sizeof(stackElement));
+    CHECK_ALLOCATION(newElement)
     Terminal* terminal = malloc(sizeof(Terminal));
+    CHECK_ALLOCATION(terminal)
     terminal->tType = tType;
     terminal->token = token;
     newElement->data.terminal = terminal;
@@ -63,6 +68,7 @@ void stackPushTerminal(stack* s, terminalType tType, Token* token){
 
 void stackPushNonterminal(stack* s, Nonterminal* nonterm){
     stackElement* newElement = malloc(sizeof(stackElement));
+    CHECK_ALLOCATION(newElement)
     
     newElement->data.etype = NONTERMINAL;
     newElement->data.nonterminal = nonterm;
@@ -127,6 +133,7 @@ void stackMultiPop(stack* s, int count){
 void stackInsertHandle(stack* s){
     stackElement* termTop = getTopTerminal(s);
     stackElement* new = malloc(sizeof(stackElement));
+    CHECK_ALLOCATION(new)
     new->data.etype = HANDLE;
     new->data.terminal = NULL;
 

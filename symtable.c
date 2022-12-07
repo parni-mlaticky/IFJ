@@ -7,6 +7,7 @@
 #include "symtable.h"
 #include <stdlib.h>
 #include <string.h>
+#include "misc.h"
 
 int SYMTABLE_SIZE = MAX_SYMTABLE_SIZE;
 
@@ -52,7 +53,9 @@ void symtable_insert(sym_table_t *table, char *key, symtableElem* value) {
 
   // Init the new element.
   symtable_item_t* new = malloc(sizeof(symtable_item_t));
+  CHECK_ALLOCATION(new)
   char* new_key = malloc(strlen(key)+1);
+  CHECK_ALLOCATION(new_key)
   strcpy(new_key, key);
   new->key = new_key;
   new->value = value;

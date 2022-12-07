@@ -6,6 +6,7 @@
  */
 #include "list.h"
 #include "variable.h"
+#include "misc.h"
 
 #ifndef GENERIC_LIST
 #define GENERIC_LIST(TYPE, TYPE_NAME)                                           \
@@ -22,6 +23,7 @@
     }                                                                           \
     void TYPE_NAME##ListAppend(TYPE_NAME##List* list, TYPE data){               \
         TYPE_NAME##Elem* new = malloc(sizeof(TYPE_NAME##Elem));                 \
+        CHECK_ALLOCATION(new)                                                   \
         new->data = data;                                                       \
         new->next = NULL;                                                       \
         new->prev = list->last;                                                 \
@@ -86,6 +88,7 @@ GENERIC_LIST(Nonterminal*, nonterm)
 // Converts the charList to char*
 char* charListToString(charList *l){
     char* str = malloc((l->len+1)*sizeof(char));
+    CHECK_ALLOCATION(str)
     charElem* iter = charListGetFirst(l);
     int i = 0;
     while(i < l->len){

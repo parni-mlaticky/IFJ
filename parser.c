@@ -8,10 +8,11 @@
 
 static sym_table_t symtable;
 
-
 void addFuncToSymtable(char* name, varList* argList, bool nullable, dataType returnType, sym_table_t* localTable){
     symtableElem* functionElem = malloc(sizeof(symtableElem));
+    CHECK_ALLOCATION(functionElem)
     function* func = malloc(sizeof(function));
+    if(!func) exit(99);
     func->functionName = name;
     func->args = argList;
     func->localTable = localTable;
@@ -25,6 +26,7 @@ void addFuncToSymtable(char* name, varList* argList, bool nullable, dataType ret
 void addBuiltinFunctionsToSymtable(){
     // reads(), readi(), readf()
     varList* argList = malloc(sizeof(varList));
+    CHECK_ALLOCATION(argList)
     varListInit(argList);
     addFuncToSymtable("reads", argList, true, STRING, NULL);
     addFuncToSymtable("readi", argList, true, INT, NULL);
@@ -35,6 +37,7 @@ void addBuiltinFunctionsToSymtable(){
 
     // floatval(), intval(), strval()
     argList = malloc(sizeof(varList));
+    CHECK_ALLOCATION(argList)
     varListInit(argList);
     variable term = {.dType = UNKNOWN, .name = "term", .nullable = true};
     varListAppend(argList, term);
@@ -44,6 +47,7 @@ void addBuiltinFunctionsToSymtable(){
 
     // strlen()
     argList = malloc(sizeof(varList));
+    CHECK_ALLOCATION(argList)
     varListInit(argList);
     variable string = {.dType = STRING, .name = "s", .nullable = false};
     varListAppend(argList, string);
@@ -51,6 +55,7 @@ void addBuiltinFunctionsToSymtable(){
 
     // substring()
     argList = malloc(sizeof(varList));
+    CHECK_ALLOCATION(argList)
     varListInit(argList);
     varListAppend(argList, string);
     variable i = {.dType = INT, .name = "i", .nullable = false};
@@ -61,12 +66,14 @@ void addBuiltinFunctionsToSymtable(){
 
     // ord()
     argList = malloc(sizeof(varList));
+    CHECK_ALLOCATION(argList)
     varListInit(argList);
     varListAppend(argList, string);
     addFuncToSymtable("ord", argList, false, INT, NULL);
 
     // chr()
     argList = malloc(sizeof(varList));
+    CHECK_ALLOCATION(argList)
     varListInit(argList);
     varListAppend(argList, i);
     addFuncToSymtable("chr", argList, false, STRING, NULL);
@@ -95,6 +102,7 @@ bool firstPass(tokList* tl){
 
         // function found: expand the function definition and add its arguments to args
         args = malloc(sizeof(varList));
+        CHECK_ALLOCATION(args)
         varListInit(args);
         fPass = compareTerminalStrings(t, "function");
         t = getNextToken(tl);
@@ -113,6 +121,7 @@ bool firstPass(tokList* tl){
 
         // create local symtable for the function
         localTable = calloc(sizeof(sym_table_t), 1);
+        CHECK_ALLOCATION(localTable)
         varListFirst(args);
         variable varIter;
 
@@ -125,6 +134,7 @@ bool firstPass(tokList* tl){
             var = symtable_get(localTable, varIter.name);
             if(var) semanticError(8);
             var = malloc(sizeof(symtableElem));
+            CHECK_ALLOCATION(var)
             var->type = VARIABLE;
             var->v = variable_clone(&varIter);
             symtable_insert(localTable, varIter.name, var);
@@ -384,6 +394,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
     if(count == 1){
         if(precParseCheckRule(handle->prev, NULL, NULL) == EXP_TERM){
             stackElement* tmp = malloc(sizeof(stackElement));
+            CHECK_ALLOCATION(tmp)
             memcpy(tmp, handle->prev, sizeof(stackElement));
             stackMultiPop(s, count+1);
 
@@ -449,11 +460,14 @@ void precParseReduction(stack* s, bool* relOpInExp){
 
             // copy the stack nonterminals since they get popped before the new nonterminal gets pushed
             Nonterminal* operand1 = malloc(sizeof(Nonterminal));
+            CHECK_ALLOCATION(operand1)
             Nonterminal* operand2 = malloc(sizeof(Nonterminal));
+            CHECK_ALLOCATION(operand2)
             memcpy(operand1, handle->prev->data.nonterminal, sizeof(Nonterminal));
             memcpy(operand2, handle->prev->prev->prev->data.nonterminal, sizeof(Nonterminal));
 
             stackElement* op = malloc(sizeof(stackElement));
+            CHECK_ALLOCATION(op)
             memcpy(op, handle->prev->prev, sizeof(stackElement));
 
             // create the new nonterminal, pop stack content above handle and push new nonterminal
@@ -465,6 +479,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
         // Rule E => (E)
         else if(precParseCheckRule(handle->prev, handle->prev->prev, handle->prev->prev->prev) == EXP_PAR){
             Nonterminal* exp = malloc(sizeof(Nonterminal));
+            CHECK_ALLOCATION(exp)
             memcpy(exp, handle->prev->prev->data.nonterminal, sizeof(Nonterminal));
             stackMultiPop(s, count+1);
             stackPushNonterminal(s, exp);
@@ -476,6 +491,7 @@ void precParseReduction(stack* s, bool* relOpInExp){
 
 Nonterminal* createIntLiteralNonterminal(int value){
     Nonterminal* intLit = malloc(sizeof(Nonterminal));
+    CHECK_ALLOCATION(intLit)
     intLit->NTType = LITERAL_TERM;
     intLit->term.integerLit = value;
     intLit->dType = INT;
@@ -489,6 +505,7 @@ Nonterminal* createIntLiteralNonterminal(int value){
 
 Nonterminal* createStringLiteralNonterminal(char* string){
     Nonterminal* stringLit = malloc(sizeof(Nonterminal));
+    CHECK_ALLOCATION(stringLit)
     stringLit->NTType = LITERAL_TERM;
     stringLit->term.stringLit = string;
     stringLit->dType = STRING;
@@ -501,6 +518,7 @@ Nonterminal* createStringLiteralNonterminal(char* string){
 
 Nonterminal* createFloatLiteralNonterminal(double value){
     Nonterminal* floatLit = malloc(sizeof(Nonterminal));
+    CHECK_ALLOCATION(floatLit)
     floatLit->NTType = LITERAL_TERM;
     floatLit->term.floatLit = value;
     floatLit->dType = FLOAT;
@@ -513,7 +531,9 @@ Nonterminal* createFloatLiteralNonterminal(double value){
 
 Nonterminal* createFuncallNonterminal(char* funId, nontermList* args){
     Nonterminal* funcNonterm = malloc(sizeof(Nonterminal));
+    CHECK_ALLOCATION(funcNonterm)
     funcall* func = malloc(sizeof(funcall));
+    CHECK_ALLOCATION(func)
     func->funId = funId;
     func->args = args;
 
@@ -531,6 +551,7 @@ Nonterminal* createFuncallNonterminal(char* funId, nontermList* args){
 
 Nonterminal* createNullNonterminal(){
     Nonterminal* nullNonterm = malloc(sizeof(Nonterminal));
+    CHECK_ALLOCATION(nullNonterm)
 
     nullNonterm->NTType = LITERAL_TERM;
     nullNonterm->dType = NULL_T;
@@ -543,7 +564,9 @@ Nonterminal* createNullNonterminal(){
 
 Nonterminal* createVariableNonterminal(char* varId, dataType dType){
     Nonterminal* varNonterm = malloc(sizeof(Nonterminal));
+    CHECK_ALLOCATION(varNonterm)
     variable* var = malloc(sizeof(variable));
+    CHECK_ALLOCATION(var)
     var->name = varId;
     var->dType = dType;
     
@@ -558,6 +581,7 @@ Nonterminal* createVariableNonterminal(char* varId, dataType dType){
 
 Nonterminal* createExprNonterminal(Nonterminal* left, Nonterminal* right, terminalType operator){
     Nonterminal* newNonterminal = calloc(sizeof(Nonterminal), 1);
+    CHECK_ALLOCATION(newNonterminal)
 
     newNonterminal->expr.left = left;
     newNonterminal->expr.right = right;
@@ -626,6 +650,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
                 else{
                     Token *nextToken = getNextToken(tl); // name of the function
                     nontermList* args = malloc(sizeof(nontermList));
+                    CHECK_ALLOCATION(args)
                     nontermListInit(args);
 
                     nextToken = getNextToken(tl);       // should be '('
@@ -702,6 +727,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
     // if expr is empty, create an empty nonterminal
     else{
         Nonterminal* empty = malloc(sizeof(Nonterminal));
+        CHECK_ALLOCATION(empty)
         empty->NTType = EMPTY;
         *finalNonterm = empty;
     }
@@ -714,11 +740,13 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
 bool parse_file(FILE* file) {
     bool result = false;
     tokList* list = malloc(sizeof(tokList));
+    CHECK_ALLOCATION(list)
     tokListInit(list);
     Token token;
     bool expect_prolog = true;
     do {
         Token* new = malloc(sizeof(Token));
+        CHECK_ALLOCATION(new)
         *new = scan_next_token(file, expect_prolog);
         token = *new;
         tokListAppend(list, new);
@@ -917,6 +945,7 @@ void processPossibleVariableDefinition(Nonterminal* expTree, sym_table_t* symtab
     if (elem == NULL) {
         // CREATING VAR LIST FOR DEFINING AT THE END OF THE FUNCTION
         elem = malloc(sizeof(symtableElem));
+        CHECK_ALLOCATION(elem)
         elem->type = VARIABLE;
         elem->v    = variable_clone(var->term.var);
         symtable_insert(symtable, var->term.var->name, elem);
@@ -1137,6 +1166,7 @@ bool paramsExpansion(tokList* tl, varList* args){
     if(compareLexTypes(t, PAR_R)) params = true;
     else{
         variable* var = calloc(sizeof(variable), 1);
+        CHECK_ALLOCATION(var)
         //var type
         params = typeExpansion(tl, &var->dType, &var->nullable, false);
         //other var info
@@ -1157,6 +1187,7 @@ bool paramListExpansion(tokList* tl, varList* args){
     // the other rule
     else{
         variable* var = calloc(sizeof(variable), 1);
+        CHECK_ALLOCATION(var)
         t = getNextToken(tl);
         paramList = compareLexTypes(t, COMMA) && typeExpansion(tl, &var->dType, &var->nullable, false) && varExpansion(tl, var) && paramListExpansion(tl, args);
         varListAppend(args, *var);
