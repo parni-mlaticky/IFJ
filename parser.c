@@ -1,9 +1,9 @@
 #include "parser.h"
 
-static ht_table_t symtable;
+static sym_table_t symtable;
 
 
-void addFuncToSymtable(char* name, varList* argList, bool nullable, dataType returnType, ht_table_t* localTable){
+void addFuncToSymtable(char* name, varList* argList, bool nullable, dataType returnType, sym_table_t* localTable){
     symtableElem* functionElem = malloc(sizeof(symtableElem));
     function* func = malloc(sizeof(function));
     func->functionName = name;
@@ -13,7 +13,7 @@ void addFuncToSymtable(char* name, varList* argList, bool nullable, dataType ret
     func->returnType = returnType;
     functionElem->type = FUNCTION;
     functionElem->f = func;
-    ht_insert(&symtable, name, functionElem);
+    symtable_insert(&symtable, name, functionElem);
 }
 
 void addBuiltinFunctionsToSymtable(){
@@ -74,7 +74,7 @@ bool firstPass(tokList* tl){
     dataType returnType;
     bool nullable = false;
     varList* args;
-    ht_table_t* localTable;
+    sym_table_t* localTable;
     symtableElem* var;
     tokListFirst(tl);
     Token* t = tokListGetValue(tl);
@@ -103,10 +103,10 @@ bool firstPass(tokList* tl){
         fPass = fPass && compareLexTypes(t, COLON) && typeExpansion(tl, &returnType, &nullable, true);
         if(!fPass) syntaxError(NULL, "Function definition error\n");
         // if function already in symtable, exit
-        if(ht_get(&symtable, funcName)) semanticError(3);
+        if(symtable_get(&symtable, funcName)) semanticError(3);
 
         // create local symtable for the function
-        localTable = calloc(sizeof(ht_table_t), 1);
+        localTable = calloc(sizeof(sym_table_t), 1);
         varListFirst(args);
         variable varIter;
 
@@ -116,12 +116,12 @@ bool firstPass(tokList* tl){
             if(!varIter.name){
                 syntaxError(NULL, "error in params in function declaration");
             }
-            var = ht_get(localTable, varIter.name);
+            var = symtable_get(localTable, varIter.name);
             if(var) semanticError(8);
             var = malloc(sizeof(symtableElem));
             var->type = VARIABLE;
             var->v = variable_clone(&varIter);
-            ht_insert(localTable, varIter.name, var);
+            symtable_insert(localTable, varIter.name, var);
             varListNext(args);
         }
             // finally, add function to symtable
@@ -719,7 +719,7 @@ bool parse_file(FILE* file) {
         expect_prolog = false;
     } while (token.lex != END);
     debug_print_tokens(list);
-    ht_init(&symtable);
+    symtable_init(&symtable);
     generateStarterAsm();
     addBuiltinFunctionsToSymtable();
     result = firstPass(list);
@@ -854,7 +854,7 @@ bool blockSTListExpansion(tokList* tl, function* func){
 // <BLOCK_ST> =>  <IF_ST>, <WHILE_ST>, etc.. but not <FUNCTION_DEF>
 bool blockSTExpansion(tokList* tl, function* func){
     bool blockSt = false;
-    ht_table_t* localSymtable = &symtable;
+    sym_table_t* localSymtable = &symtable;
     if(func){
         localSymtable = func->localTable;
     }
@@ -898,7 +898,7 @@ bool blockSTExpansion(tokList* tl, function* func){
     return blockSt;
 }
 
-void processPossibleVariableDefinition(Nonterminal* expTree, ht_table_t* symtable) {
+void processPossibleVariableDefinition(Nonterminal* expTree, sym_table_t* symtable) {
     // Check if this is really is an assignment of a variable.
     if (expTree == NULL)                           return;
     if (expTree->NTType != EXPR)                   return;
@@ -910,14 +910,14 @@ void processPossibleVariableDefinition(Nonterminal* expTree, ht_table_t* symtabl
     Nonterminal* var = expTree->expr.left;
     
     // Check if variable was already added into the table
-    symtableElem* elem = ht_get(symtable, var->term.var->name);
+    symtableElem* elem = symtable_get(symtable, var->term.var->name);
     
     if (elem == NULL) {
         // CREATING VAR LIST FOR DEFINING AT THE END OF THE FUNCTION
         elem = malloc(sizeof(symtableElem));
         elem->type = VARIABLE;
         elem->v    = variable_clone(var->term.var);
-        ht_insert(symtable, var->term.var->name, elem);
+        symtable_insert(symtable, var->term.var->name, elem);
     }
     else {
         elem->v->dType = var->dType;
@@ -992,7 +992,7 @@ bool functionDefStExpansion(tokList* tl){
     // call a function that defines all local variables in the local frame
     printf("CALL _%s_VAR_DEFS\n", funcName);
     // get the function from symtable (added there in first pass)
-    function* func = ht_get(&symtable, funcName)->f;
+    function* func = symtable_get(&symtable, funcName)->f;
     varListFirst(func->args);
     variable argsIter;
     // iterate through the args list and generate code for runtime checking of passed types
@@ -1042,7 +1042,7 @@ bool functionDefStExpansion(tokList* tl){
 
 // <IF_ST> => if(<EXPR>) {<BLOCK>} else {<BLOCK>}
 bool ifStExpansion(tokList* tl, function* func){
-    ht_table_t* localSymtab = &symtable;
+    sym_table_t* localSymtab = &symtable;
     if(func){
         localSymtab = func->localTable;
     }
@@ -1088,7 +1088,7 @@ bool ifStExpansion(tokList* tl, function* func){
 
 // <WHILE_ST> => while (<EXPR>) {<BLOCK>}
 bool whileStExpansion(tokList* tl, function* func){
-    ht_table_t* localSymtable = &symtable;
+    sym_table_t* localSymtable = &symtable;
     if(func){
         localSymtable = func->localTable;
     }
@@ -1126,7 +1126,7 @@ bool whileStExpansion(tokList* tl, function* func){
 
 // <RETURN_ST> => "RETURN" <EXPR>
 bool returnStExpansion(tokList* tl, function* func){
-    ht_table_t* localSymtable = &symtable;
+    sym_table_t* localSymtable = &symtable;
     if(func){
         localSymtable = func->localTable;
     }

@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #include "codeGenerator.h"
-#include "hashtable.h"
+#include "symtable.h"
 #include "misc.h"
 #include "precParsingEnums.h"
 #include "scanner.h"
@@ -117,7 +117,7 @@ bool recursiveDescent(tokList* tl);
  * @param expTree expression tree
  * @param symtable table of symbols
  */
-void processPossibleVariableDefinition(Nonterminal* expTree, ht_table_t* symtable);
+void processPossibleVariableDefinition(Nonterminal* expTree, sym_table_t* symtable);
 
 /**
  * @brief expands the whole program into script start, statements, end token
