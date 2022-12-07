@@ -103,6 +103,7 @@ typedef struct StateInfo {
  * @return next state based on given input c. Reading is not finished until ESS_FINAL is returned.
  */
 EscapeSeqState process_str_escape_sequence(char* c, charList* buffer, EscapeSeqState current_state, char* unget, char quote) {
+    (void) unget;
     switch (current_state) {
         case ESS_UNKNOWN:
             charListInit(buffer);
@@ -153,13 +154,7 @@ EscapeSeqState process_str_escape_sequence(char* c, charList* buffer, EscapeSeqS
                 return ESS_FINAL_RAW;
             }
             else {
-                // Convert to byte and return it
-                char* string = charListToString(buffer);
-                *unget = *c;
-                *c = (char) strtol(string, NULL, 16);
-                free(string);
-                charListDispose(buffer);
-                return ESS_FINAL_NOADD;
+                return ESS_FINAL_RAW;
             }
 
         case ESS_OCTAL:
@@ -184,17 +179,7 @@ EscapeSeqState process_str_escape_sequence(char* c, charList* buffer, EscapeSeqS
                 return ESS_FINAL_RAW;
             }
             else {
-                // Convert to byte and return it
-                char* string = charListToString(buffer);
-                *unget = *c;
-                *c = (char) strtol(string, NULL, 8);
-                if (*c == '\0') {
-                    fprintf(stderr, "\nscanner: String literal cannot contain NULL bytes!\n");
-                    exit(1);
-                }
-                free(string);
-                charListDispose(buffer);
-                return ESS_FINAL_NOADD;
+                return ESS_FINAL_RAW;
             }
         default:
             fprintf(stderr, "\nscanner: Bad call to process_str_escape_sequence!");
@@ -593,9 +578,12 @@ Token scan_next_token(FILE *file, bool expect_prolog)
             charListAppend(&str, '\\');
             charListFirst(&memory.memory);
             if (memory.memory.len != 0) {
-                while (charListGetValue(&memory.memory)) {
-                    charListAppend(&str, charListGetValue(&memory.memory));
-                    charListNext(&memory.memory);
+                if (memory.memory.active != NULL) {
+                    while (1) {
+                        charListAppend(&str, charListGetValue(&memory.memory));
+                        charListNext(&memory.memory);
+                        if (memory.memory.active == NULL) break;
+                    }
                 }
             }
             charListDispose(&memory.memory);
