@@ -27,7 +27,7 @@ OBJ = $(patsubst %.c,$(BUILD_DIR)%.o,$(wildcard *.c))
 .PHONY: clean run all int intv pack
 
 # Pople like the "all"
-all: $(TARGET) pack
+all: $(TARGET)
 
 # Linking
 $(TARGET): $(OBJ)
