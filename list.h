@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "token.h"
-#include "Nonterminal.h"
+#include "precParsingNonTerminal.h"
 
 
 #ifndef GENERIC_LIST_H

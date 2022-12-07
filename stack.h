@@ -11,7 +11,7 @@
 #include "variable.h"
 #include "string.h"
 #include "precParsingEnums.h"
-#include "Nonterminal.h"
+#include "precParsingNonTerminal.h"
 
 
 typedef struct stackData{
