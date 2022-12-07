@@ -12,7 +12,7 @@ void addFuncToSymtable(char* name, varList* argList, bool nullable, dataType ret
     symtableElem* functionElem = malloc(sizeof(symtableElem));
     CHECK_ALLOCATION(functionElem)
     function* func = malloc(sizeof(function));
-    if(!func) exit(99);
+    CHECK_ALLOCATION(func)
     func->functionName = name;
     func->args = argList;
     func->localTable = localTable;
