@@ -38,8 +38,6 @@ typedef enum
     S_FLOAT_LITERAL_E_NUM,
     S_STRING_LITERAL_DQ,
     S_STRING_LITERAL_DQ_ESCAPE,
-    S_STRING_LITERAL_SQ,
-    S_STRING_LITERAL_SQ_ESCAPE,
     S_EQUAL,
     S_CONCAT_OR_FLOAT,
     S_NOT_EQUAL,
@@ -56,8 +54,6 @@ typedef enum {
   ESS_OCTAL,
   // Valid escape, add byte in variable c.
   ESS_FINAL,
-  // Valid escape, add byte in variable c but ungetc variable "unget".
-  ESS_FINAL_NOADD,
   // Invalid escape, add '\\', contents of memory and c
   ESS_FINAL_RAW,
 } EscapeSeqState;
@@ -81,7 +77,6 @@ typedef enum
 typedef struct FSMMemory {
     charList memory;
     EscapeSeqState escape_seq_state;
-    char unget;
 } FSMMemory;
 
 typedef struct StateInfo {
@@ -102,8 +97,7 @@ typedef struct StateInfo {
  * @param current_state Should be set to previously returned state. Initial state is ESS_UNKNOWN.
  * @return next state based on given input c. Reading is not finished until ESS_FINAL is returned.
  */
-EscapeSeqState process_str_escape_sequence(char* c, charList* buffer, EscapeSeqState current_state, char* unget, char quote) {
-    (void) unget;
+EscapeSeqState process_str_escape_sequence(char* c, charList* buffer, EscapeSeqState current_state) {
     switch (current_state) {
         case ESS_UNKNOWN:
             charListInit(buffer);
@@ -119,8 +113,8 @@ EscapeSeqState process_str_escape_sequence(char* c, charList* buffer, EscapeSeqS
                 *c = '\\';
                 return ESS_FINAL;
             }
-            if (*c == quote) {
-                *c = quote;
+            if (*c == '"') {
+                *c = '"';
                 return ESS_FINAL;
             }
             if (*c == '$') {
@@ -260,9 +254,6 @@ StateInfo get_next_state(ScannerState current_state, int *c, FSMMemory* memory) 
 
                 case '"':
                     return (StateInfo) {.result = R_SKIP, .next_state = S_STRING_LITERAL_DQ};
-
-                case '\'':
-                    return (StateInfo) {.result = R_SKIP, .next_state = S_STRING_LITERAL_SQ};
 
                 case '?':
                     return (StateInfo) {.result = R_SKIP, .next_state = S_QUESTION_MARK};
@@ -458,51 +449,14 @@ StateInfo get_next_state(ScannerState current_state, int *c, FSMMemory* memory) 
                 return (StateInfo) {.result = R_ERROR};
             }
 
-            memory->escape_seq_state = process_str_escape_sequence((char*) c, &memory->memory, memory->escape_seq_state, &memory->unget, '"');
+            memory->escape_seq_state = process_str_escape_sequence((char*) c, &memory->memory, memory->escape_seq_state);
             if (memory->escape_seq_state == ESS_FINAL) {
-                return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_DQ};
-            }
-            if (memory->escape_seq_state == ESS_FINAL_NOADD) {
                 return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_DQ};
             }
             if (memory->escape_seq_state == ESS_FINAL_RAW) {
                 return (StateInfo) {.result = R_SKIP, .next_state = S_STRING_LITERAL_DQ};
             }
             return (StateInfo) {.result = R_SKIP, .next_state = S_STRING_LITERAL_DQ_ESCAPE};
-
-        case S_STRING_LITERAL_SQ:
-            memory->escape_seq_state = ESS_UNKNOWN;
-            if (*c == '\'') {
-                return (StateInfo) {.result = R_FINAL_SKIP, .lex = STRING_LIT};
-            }
-            if (*c == '\\') {
-                return (StateInfo) {.result = R_SKIP, .next_state = S_STRING_LITERAL_SQ_ESCAPE};
-            }
-            if (*c == '$') {
-                return (StateInfo) {.result = R_ERROR};
-            }
-            // EOF before string termination
-            if (*c == EOF) {
-                return (StateInfo) {.result = R_ERROR};
-            }
-            return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_SQ};
-
-        case S_STRING_LITERAL_SQ_ESCAPE:
-            // EOF before string termination
-            if (*c == EOF) {
-                return (StateInfo) {.result = R_ERROR};
-            }
-            memory->escape_seq_state = process_str_escape_sequence((char*) c, &memory->memory, memory->escape_seq_state, &memory->unget, '\'');
-            if (memory->escape_seq_state == ESS_FINAL) {
-                return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_SQ};
-            }
-            if (memory->escape_seq_state == ESS_FINAL_NOADD) {
-                return (StateInfo) {.result = R_ADD, .next_state = S_STRING_LITERAL_SQ};
-            }
-            if (memory->escape_seq_state == ESS_FINAL_RAW) {
-                return (StateInfo) {.result = R_SKIP, .next_state = S_STRING_LITERAL_SQ};
-            }
-            return (StateInfo) {.result = R_SKIP, .next_state = S_STRING_LITERAL_SQ_ESCAPE};
 
         case S_EQUAL:
             if(*c == '=') {
@@ -589,9 +543,6 @@ Token scan_next_token(FILE *file, bool expect_prolog)
             charListDispose(&memory.memory);
             charListAppend(&str, c);
         }
-        else if (memory.escape_seq_state == ESS_FINAL_NOADD) {
-            ungetc(memory.unget, file);
-        }
 
         // Handling data based on the instructions from get_next_state.
         if(state_info.result == R_SKIP) {
@@ -617,7 +568,6 @@ Token scan_next_token(FILE *file, bool expect_prolog)
         }
         else{
             if (expect_prolog) {
-                // TODO What kind of error is this?
                 fprintf(stderr, "\nscanner: Missing prolog!\n");
                 exit(1);
             }
