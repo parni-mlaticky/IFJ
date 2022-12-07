@@ -1,6 +1,6 @@
 /**
  * @file variable.c
- * @author Vladimír Hucovič
+ * @author Vladimír Hucovič (xhucov00)
  * @brief Implementace funkcí pro proměnné
  * 
  */

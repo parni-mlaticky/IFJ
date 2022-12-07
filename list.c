@@ -1,6 +1,6 @@
 /**
  * @file list.c
- * @author Vladimír Hucovič
+ * @author Vladimír Hucovič (xhucov00)
  * @brief implementation of double linked list
  * 
  */

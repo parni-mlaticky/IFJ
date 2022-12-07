@@ -1,6 +1,6 @@
 /**
  * @file parser.c
- * @author Vladimír Hucovič, Ondřej Zobal, Petr Kolouch, Marek Havel
+ * @author Vladimír Hucovič (xhucov00), Ondřej Zobal (xzobal01), Petr Kolouch (xkolou05), Marek Havel (xhavel46)
  * @brief implementation of syntax analyzer
  * 
  */

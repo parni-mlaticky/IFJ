@@ -1,6 +1,6 @@
 /**
  * @file symtable.h
- * @author Vladimír Hucovič, Petr Kolouch, Ondřej Zobal, Marek Havel
+ * @author Vladimír Hucovič (xhucov00), Petr Kolouch (xkolou05), Ondřej Zobal (xzobal01), Marek Havel (xhavel46)
  * @brief header file for symtable based on hash table
  * 
  */

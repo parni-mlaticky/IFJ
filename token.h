@@ -1,6 +1,6 @@
 /**
  * @file token.h
- * @author Petr Kolouch
+ * @author Petr Kolouch (xkolou05)
  * @brief header file for lexeme enum definition
  */
 

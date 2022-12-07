@@ -1,6 +1,6 @@
 /**
  * @file scanner.c
- * @author Ondřej Zobal, Petr Kolouch, Marek Havel, Vladimír Hucovič
+ * @author Ondřej Zobal (xzobal01), Petr Kolouch (xkolou05), Marek Havel (xhavel46), Vladimír Hucovič (xhucov00)
  * @brief implementation of scanner functions
  * 
  */

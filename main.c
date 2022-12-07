@@ -1,6 +1,6 @@
 /**
  * @file main.c
- * @author Vladimír Hucovič, Ondřej Zobal
+ * @author Vladimír Hucovič (xhucov00), Ondřej Zobal (xzobal01)
  * @brief main
  * 
  */

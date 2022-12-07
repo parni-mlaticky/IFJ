@@ -1,6 +1,6 @@
 /**
  * @file codeGenerator.h
- * @author Vladimír Hucovič, Ondřej Zobal
+ * @author Vladimír Hucovič (xhucov00), Ondřej Zobal (xzobal01)
  * @brief header file for code generation functions
  * 
  */

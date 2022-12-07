@@ -1,6 +1,6 @@
 /**
  * @file scanner.h
- * @author Ondřej Zobal, Petr Kolouch
+ * @author Ondřej Zobal (xzobal01), Petr Kolouch (xkolou05)
  * @brief Header files for scanner functions
  * 
  */

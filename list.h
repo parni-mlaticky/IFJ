@@ -1,6 +1,6 @@
 /**
  * @file list.h
- * @authors Vladimír Hucovič
+ * @authors Vladimír Hucovič (xhucov00)
  * @brief Macro definition for a generic list type
 */
 

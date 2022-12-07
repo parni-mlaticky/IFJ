@@ -1,6 +1,6 @@
 /**
  * @file stack.h
- * @author Vladimír Hucovič
+ * @author Vladimír Hucovič (xhucov00)
  * @brief header file for stack structure, functions
  * 
  */

@@ -1,6 +1,6 @@
 /**
  * @file codeGenerator.c
- * @author Vladimír Hucovič, Ondřej Zobal, Petr Kolouch
+ * @author Vladimír Hucovič (xhucov00), Ondřej Zobal (xzobal01), Petr Kolouch (xkolou05)
  * @brief implementation of code generation
  * 
  */
