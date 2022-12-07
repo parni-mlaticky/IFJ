@@ -9,7 +9,7 @@ typedef struct variable{
 } variable;
 
 /**
- * @brief creates a clone of a variable
+ * @brief copies a given variable into a newly allocated memory
  * 
  * @param var variable to clone
  * @return variable* variable clone

@@ -5,17 +5,8 @@
 #include "list.h"
 #include "semanticError.h"
 
-/**
- * @brief generates code for expression
- * 
- * @param root root node of the expression
- * @param isLeftSideOfAssignment left side of assigment
- * @param localSymtable local symtable
- * @param globalSymtable global symtable
- */
 void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_table_t *localSymtable,
                              ht_table_t* globalSymtable);
-
 void generateToBoolFunction();
 void generateToFloatFunction();
 void generateEnforceTypesFunction();
