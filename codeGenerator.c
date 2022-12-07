@@ -40,7 +40,7 @@ void defineFunctionVars(ht_table_t symtable) {
         iter = symtable[i];
         if (iter) {
             while(iter){
-                if (symtable[i]->value->type == VARIABLE) {
+                if (iter->value->type == VARIABLE) {
                     printf("DEFVAR LF@%s\n", iter->value->v->name);
                 }
                 iter = iter->next;
