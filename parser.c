@@ -609,8 +609,7 @@ bool precParser(tokList* tl, Nonterminal** finalNonterm, bool isFuncArg){
     Token* token;
     stackElement* top;
 
-    // this loop reads tokens in the expression and calls functions
-    // that  
+    // this loop reads tokens in the expression and calls other precedence parsing functions
     while(1){
         token = tokListGetValue(tl);
         if(!token) syntaxError(token, "precParser missing Token error");
