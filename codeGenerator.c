@@ -582,41 +582,24 @@ void generateExpressionCode(Nonterminal *root, bool isLeftSideOfAssignment, ht_t
                 }
                 break;
             case FUNCALL_TERM:
-                // generate semantic check of params
-                // evaluate all args right to left
-                // create frame
-                // call function
-                // check what it returned
-                // clean up??
-                // profit??
                 ;
                 symtableElem *func = ht_get(globalSymtable, root->term.func->funId);
                 // Function doesnt exist
                 if (!func) semanticError(3);
 
                 // Function has the correct number of arguments OR it can have N arguments (write() for example)
-                else if((!func->f->args || func->f->args->len == root->term.func->args->len)){
-                    
-                    // Functions that can have N arguments: we have to push in opposite order
+                else if((!func->f->args || func->f->args->len == root->term.func->args->len)){   
+                    nontermListFirst(root->term.func->args);
+                    Nonterminal* iter;    
+                    for(int i = 0; i < root->term.func->args->len; i++){
+                        iter = nontermListGetValue(root->term.func->args);
+                        generateExpressionCode(iter, false, localSymtable, globalSymtable);
+                        nontermListNext(root->term.func->args);
+                    }
                     if(!func->f->args){
-                        nontermListLast(root->term.func->args);
-                        Nonterminal* iter;    
-                        for(int i = 0; i < root->term.func->args->len; i++){
-                            iter = nontermListGetValue(root->term.func->args);
-                            generateExpressionCode(iter, false, localSymtable, globalSymtable);
-                            nontermListPrev(root->term.func->args);
-                        }
                         printf("PUSHS int@%d\n", root->term.func->args->len);
                     }
-                    else{
-                        nontermListFirst(root->term.func->args);
-                        Nonterminal* iter;    
-                        for(int i = 0; i < root->term.func->args->len; i++){
-                            iter = nontermListGetValue(root->term.func->args);
-                            generateExpressionCode(iter, false, localSymtable, globalSymtable);
-                            nontermListNext(root->term.func->args);
-                        }
-                    }
+                    
                     
                     printf("CREATEFRAME\n");
                     printf("PUSHFRAME\n");
